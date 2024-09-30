@@ -2,19 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "C/C++ Runner: Debug Session",
+      "name": "Depurar Programa C++",
       "type": "cppdbg",
       "request": "launch",
+      "program": "${workspaceFolder}/calendar",
       "args": [],
       "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
       "externalConsole": true,
-      "cwd": "c:/Users/Felipe vargas/OneDrive - Estudiantes ITCR/Escritorio/scheduling-ships",
-      "program": "c:/Users/Felipe vargas/OneDrive - Estudiantes ITCR/Escritorio/scheduling-ships/build/Debug/launch.json",
       "MIMode": "gdb",
-      "miDebuggerPath": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "preLaunchTask": "Compilar",
       "setupCommands": [
         {
-          "description": "Enable pretty-printing for gdb",
+          "description": "Habilitar pretty-printing para gdb",
           "text": "-enable-pretty-printing",
           "ignoreFailures": true
         }
