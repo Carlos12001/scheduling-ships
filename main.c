@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>   // Para sleep()
+#include <unistd.h>
 #include "vector.h"
 
 // Estructura para representar un hilo (barco)
@@ -22,21 +22,31 @@ void ejecutarHilo(const CEThread* hilo) {
 
 // Funciones de comparación para qsort
 int compareArrivalTime(const void* a, const void* b) {
-    CEThread* threadA = (CEThread*)a;
-    CEThread* threadB = (CEThread*)b;
+    const CEThread* threadA = (const CEThread*)a;
+    const CEThread* threadB = (const CEThread*)b;
     return threadA->arrival_time - threadB->arrival_time;
 }
 
 int compareBurstTime(const void* a, const void* b) {
-    CEThread* threadA = (CEThread*)a;
-    CEThread* threadB = (CEThread*)b;
+    const CEThread* threadA = (const CEThread*)a;
+    const CEThread* threadB = (const CEThread*)b;
     return threadA->burst_time - threadB->burst_time;
 }
 
 int comparePriority(const void* a, const void* b) {
-    CEThread* threadA = (CEThread*)a;
-    CEThread* threadB = (CEThread*)b;
+    const CEThread* threadA = (const CEThread*)a;
+    const CEThread* threadB = (const CEThread*)b;
     return threadB->priority - threadA->priority;  // Mayor prioridad ejecuta primero
+}
+
+// Función para imprimir el orden de los hilos (para depuración)
+void imprimirOrden(const vector* v, const char* mensaje) {
+    printf("%s\n", mensaje);
+    for (int i = 0; i < vector_total((vector*)v); i++) {
+        CEThread* hilo = (CEThread*)vector_get((vector*)v, i);
+        printf("Hilo ID: %d, Burst Time: %d, Arrival Time: %d, Priority: %d\n",
+               hilo->id, hilo->burst_time, hilo->arrival_time, hilo->priority);
+    }
 }
 
 // Algoritmo FCFS (First Come, First Served)
@@ -74,8 +84,16 @@ void sjf(vector* hilos) {
         *nuevo_hilo = *hilo;
         vector_add(&hilos_sjf, nuevo_hilo);
     }
+
+    // Imprimir antes de ordenar
+    imprimirOrden(&hilos_sjf, "Antes de ordenar SJF:");
+
     // Ordenar por burst_time
     qsort(hilos_sjf.items, hilos_sjf.total, sizeof(void*), compareBurstTime);
+
+    // Imprimir después de ordenar
+    imprimirOrden(&hilos_sjf, "Después de ordenar SJF:");
+
     // Ejecutar hilos
     for (int i = 0; i < vector_total(&hilos_sjf); i++) {
         CEThread* hilo = (CEThread*)vector_get(&hilos_sjf, i);
@@ -203,11 +221,11 @@ int main() {
     vector_init(&hilos_originales);
 
     CEThread* hilo1 = malloc(sizeof(CEThread));
-    *hilo1 = (CEThread){1, 2, 4, 0, 0}; // id, prioridad, burst_time, arrival_time, real_time
+    *hilo1 = (CEThread){1, 1, 4, 0, 0}; // id, prioridad, burst_time, arrival_time, real_time
     vector_add(&hilos_originales, hilo1);
 
     CEThread* hilo2 = malloc(sizeof(CEThread));
-    *hilo2 = (CEThread){2, 1, 2, 1, 0};
+    *hilo2 = (CEThread){2, 2, 2, 1, 0};
     vector_add(&hilos_originales, hilo2);
 
     CEThread* hilo3 = malloc(sizeof(CEThread));
@@ -215,7 +233,7 @@ int main() {
     vector_add(&hilos_originales, hilo3);
 
     CEThread* hilo4 = malloc(sizeof(CEThread));
-    *hilo4 = (CEThread){4, 2, 3, 3, 0};
+    *hilo4 = (CEThread){4, 4, 3, 3, 0};
     vector_add(&hilos_originales, hilo4);
 
     int opcion;

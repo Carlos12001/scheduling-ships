@@ -6,6 +6,10 @@ void vector_init(vector *v) {
     v->capacity = VECTOR_INIT_CAPACITY;
     v->total = 0;
     v->items = malloc(sizeof(void *) * v->capacity);
+    if (!v->items) {
+        fprintf(stderr, "Error: No se pudo asignar memoria para el vector.\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 int vector_total(vector *v) {
@@ -17,6 +21,9 @@ static void vector_resize(vector *v, int capacity) {
     if (items) {
         v->items = items;
         v->capacity = capacity;
+    } else {
+        fprintf(stderr, "Error: No se pudo redimensionar el vector.\n");
+        exit(EXIT_FAILURE);
     }
 }
 
