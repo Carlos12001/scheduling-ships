@@ -12,4 +12,4 @@ target_link_libraries(${PROJECT_NAME} cethread)
 
 # Copy image files to the build directory (if needed)
 file(COPY gui/images/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/images)
-
+file(COPY config/ships.config DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config)
