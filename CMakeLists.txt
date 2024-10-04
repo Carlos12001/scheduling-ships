@@ -1,7 +1,11 @@
+# .
 cmake_minimum_required(VERSION 3.25.0)         
 
 # Set the project name
 project (sheduling-ships)
+
+# Define _GNU_SOURCE globally
+add_definitions(-D_GNU_SOURCE)
 
 # Establece el directorio de salida de los binarios
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

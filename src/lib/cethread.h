@@ -1,14 +1,19 @@
 #ifndef CETHREAD_H
 #define CETHREAD_H
 
-#include <pthread.h>
+#include <sys/types.h>
+
+#ifndef STACK_SIZE
+#define STACK_SIZE (1024 * 1024)  // 1MiB
+#endif
 
 typedef struct {
-  pthread_t thread;
+  pid_t tid;    // ID del hilo
+  void *stack;  // Puntero a la pila del hilo
 } cethread_t;
 
 typedef struct {
-  pthread_mutex_t mutex;
+  volatile int lock;  // Variable de bloqueo simple
 } cemutex;
 
 // Funciones CEThreads que envuelven las de pthread

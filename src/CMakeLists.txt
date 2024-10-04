@@ -1,3 +1,5 @@
+# src/CMakeLists.txt
+
 # Include directories for header files
 include_directories(${CMAKE_SOURCE_DIR}/src/lib)
 

@@ -1,3 +1,6 @@
+# src/tests/CMakeLists.txt
+
+
 # Set a separate directory for the test binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS ${CMAKE_BINARY_DIR}/tests/bin)
 
