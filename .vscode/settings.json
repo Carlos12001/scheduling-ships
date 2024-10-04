@@ -6,6 +6,8 @@
   "files.associations": {
     "stdlib.h": "c",
     "stdio.h": "c",
-    "pthread.h": "c"
+    "pthread.h": "c",
+    "cethread.h": "c",
+    "unistd.h": "c"
   }
 }

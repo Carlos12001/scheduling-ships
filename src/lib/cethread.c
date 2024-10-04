@@ -17,14 +17,22 @@ int cethread_join(cethread_t thread, void **retval) {
   return pthread_join(thread.thread, retval);
 }
 
-int cemutex_init(cemutex *mutex) {
-  return pthread_mutex_init(&mutex->mutex, NULL);
+
+/**********************
+******** Mutex ********
+***********************/
+
+int cemutex_init(my_mutex_t *mutex) {
+  atomic_flag_clear(&mutex->flag); // De stdatomic.h
 }
 
 int cemutex_destroy(cemutex *mutex) {
   return pthread_mutex_destroy(&mutex->mutex);
 }
 
-int cemutex_unlock(cemutex *mutex) {
-  return pthread_mutex_unlock(&mutex->mutex);
+// Implementar lock
+
+int cemutex_unlock(my_mutex_t *mutex) {
+  //return pthread_mutex_unlock(&mutex->mutex);
+  atomic_flag_clear(&mutex->flag);
 }
