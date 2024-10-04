@@ -1,5 +1,6 @@
 # Include directories for header files
 include_directories(${CMAKE_SOURCE_DIR}/src/lib)
+include_directories(${CMAKE_SOURCE_DIR}/src/canal)
 
 # Add subdirectory for the library code
 add_subdirectory(lib)
