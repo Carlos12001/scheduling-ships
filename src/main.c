@@ -4,6 +4,5 @@
 
 int main() {
   printf("Hello scheduling-ships!\n");
-  cethread_init();
   return 0;
 }

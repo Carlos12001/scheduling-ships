@@ -9,6 +9,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Support for C 
 enable_language(C)
 
+# Support CTest
+include(CTest)
+
 # Add subdirectories
 add_subdirectory(src)
 
