@@ -27,7 +27,7 @@ Scheduling Ships is a project that implements a custom thread library in C calle
 ### Tools
 
 ```bash
-sudo apt install build-essential cmake ninja-build clang-format
+sudo apt install build-essential cmake ninja-build
 ```
 
 ## Configuration

@@ -5,7 +5,7 @@
 void* thread_func(void* arg) {
   for (int i = 0; i < 3; i++) {
     sleep(1);
-    printf("PThread started: %ld\n", (long)arg);
+    printf("Pthread started: %ld\n", (long)arg);
   }
   return NULL;
 }
