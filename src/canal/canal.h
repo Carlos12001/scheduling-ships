@@ -8,12 +8,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <time.h>
 
 #define MAX_LINE_LENGTH 256
 
 
 
 typedef struct {
+    pthread_t thread;
     int ID;
     int position;
     int speed;    //default speed
@@ -31,20 +33,20 @@ typedef struct {
 
 typedef struct {
     int managed_boats;//De momento uso los ids de aqui
+    int boats_in;
     int size;
     int W;
     int time;
-    int *canal;
+    boat *canal;
     int boatspeeds[3];
-    bool rightdir;
     int scheduling;   //0 igual
                         //1 semaforo
                         //2 tico
+    bool direction;//True derecha, false izquierda
+    bool running;
+    bool Yellowlight;//Esta variable es sobre todo para interfaz, una especie de alerta de luz amarilla
 }canal;
 
-typedef struct {
-    boat b; // El barco
-} BoatWrapper;
 
 
 
@@ -68,5 +70,15 @@ void *boatmover(void *arg);
 void entercanal();
 
 void canalcontent();
+
+void *Canal_Schedule(void *arg);
+
+void BoatGUI();
+
+void YellowCanal();
+
+int EnterCanal();
+
+boat GetEnterBoat();
 
 #endif // CANAL_H;
