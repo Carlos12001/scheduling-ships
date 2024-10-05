@@ -13,14 +13,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Support for C 
 enable_language(C)
 
+# Define the C standard
+set(CMAKE_C_STANDARD 11)
+
 # Support CTest
 include(CTest)
 
+
+# Enable debugging symbols
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
+
 # Add subdirectories
 add_subdirectory(src)
-
-# Define the C standard
-set(CMAKE_C_STANDARD 11)
 
 # Set the project name as a variable for reuse
 set(PROJECT_NAME ${CMAKE_PROJECT_NAME})

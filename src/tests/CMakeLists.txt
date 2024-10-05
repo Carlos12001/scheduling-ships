@@ -4,23 +4,6 @@
 # Set a separate directory for the test binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS ${CMAKE_BINARY_DIR}/tests/bin)
 
-# ------- PTHREAD TESTS -------
-
-# Add the pthread_create test
-add_executable(pthread_create pthread_create.c)
-set_target_properties(pthread_create PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-target_link_libraries(pthread_create pthread)
-
-# Add the pthread_join test
-add_executable(pthread_join pthread_join.c)
-set_target_properties(pthread_join PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-target_link_libraries(pthread_join pthread)
-
-## MUX PTHREAD TESTS
-
-# Register the tests with CTest
-add_test(NAME pthread_create_test COMMAND pthread_create)
-add_test(NAME pthread_join_test COMMAND pthread_join)
 
 # ------- CETHREAD TESTS -------
 
@@ -34,8 +17,14 @@ add_executable(cethread_join cethread_join.c)
 set_target_properties(cethread_join PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
 target_link_libraries(cethread_join cethread)
 
+# Add the cethread_end test
+add_executable(cethread_end cethread_end.c)
+set_target_properties(cethread_end PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(cethread_end cethread)
+
 
 ## CEMUX TESTS
 
 add_test(NAME cethread_create_test COMMAND cethread_create)
 add_test(NAME cethread_join_test COMMAND cethread_join)
+add_test(NAME cethread_end_test COMMAND cethread_end)
