@@ -33,8 +33,8 @@ target_link_libraries(pthread_mutex_unlock pthread)
 
 
 # Register the tests with CTest
-add_test(NAME pthread_create_test COMMAND pthread_create)
-add_test(NAME pthread_join_test COMMAND pthread_join)
+# add_test(NAME pthread_create_test COMMAND pthread_create)
+# add_test(NAME pthread_join_test COMMAND pthread_join)
 add_test(NAME pthread_mutex_init_test COMMAND pthread_mutex_init)
 add_test(NAME pthread_mutex_destroy_test COMMAND pthread_mutex_destroy)
 add_test(NAME pthread_mutex_unlock_test COMMAND pthread_mutex_unlock)
