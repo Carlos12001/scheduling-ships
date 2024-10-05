@@ -78,3 +78,31 @@ void cethread_end(void *retval) {
 
   _exit(0);  // Terminate the current thread
 }
+
+/**********************
+******** Mutex ********
+***********************/
+int cemutex_init(cemutex *cm) {
+  atomic_flag_clear(&cm->flag);  // De stdatomic.h
+  return 0;
+}
+
+int cemutex_destroy(cemutex *cm) {
+  if (atomic_flag_test_and_set(&cm->flag)) {
+    printf("Error: intento de destruir un mutex aún bloqueado.\n");
+    return 1;
+  }
+  return 0;
+}
+
+int cemutex_lock(cemutex *cm) {
+  while (atomic_flag_test_and_set(&cm->flag)) {
+    // Spinlock - Espera activa
+  }
+  return 0;
+}
+
+int cemutex_unlock(cemutex *cm) {
+  atomic_flag_clear(&cm->flag);
+  return 0;
+}
