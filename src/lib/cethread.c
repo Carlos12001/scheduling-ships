@@ -1,43 +1,80 @@
 #include "cethread.h"
 
-#define _GNU_SOURCE
 #include <errno.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/wait.h>  // For waitpid
 #include <unistd.h>
+
+// Thread-local variable to store the current thread's argument
+static __thread thread_arg_t *current_thread_arg = NULL;
+
+// Wrapper function that runs the thread routine
+int thread_start(void *arg) {
+  thread_arg_t *thread_arg = (thread_arg_t *)arg;
+  current_thread_arg = thread_arg;
+
+  // Execute the thread function
+  void *retval = thread_arg->start_routine(thread_arg->arg);
+  thread_arg->retval = retval;
+
+  // Properly terminate the thread
+  _exit(0);
+}
 
 int cethread_create(cethread_t *thread, void *(*start_routine)(void *),
                     void *arg) {
-  // Create a new STACK_SIZE bytes stack
+  // Allocate memory for the stack
   thread->stack = malloc(STACK_SIZE);
   if (thread->stack == NULL) {
-    return -1;  // Error al asignar la pila
+    return -1;  // Error allocating the stack
   }
 
-  // Apuntar al final de la pila (las pilas crecen hacia abajo)
+  // Allocate memory for the thread arguments
+  thread->thread_arg = malloc(sizeof(thread_arg_t));
+  if (thread->thread_arg == NULL) {
+    free(thread->stack);
+    return -1;  // Error allocating thread_arg
+  }
+  thread->thread_arg->start_routine = start_routine;
+  thread->thread_arg->arg = arg;
+  thread->thread_arg->retval = NULL;
+
+  // Calculate the top of the stack (it grows downward)
   void *stack_top = (char *)thread->stack + STACK_SIZE;
 
-  // Crear el nuevo hilo
+  // Create the thread using clone
   thread->tid =
-      clone((int (*)(void *))start_routine, stack_top,
-            SIGCHLD | CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND, arg);
+      clone(thread_start, stack_top,
+            SIGCHLD | CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND,
+            thread->thread_arg);
   if (thread->tid == -1) {
     free(thread->stack);
-    return -1;  // Error al crear el hilo
+    free(thread->thread_arg);
+    return -1;  // Error creating the thread
   }
 
-  return 0;  // Éxito
+  return 0;  // Success
 }
 
 int cethread_join(cethread_t thread, void **retval) {
+  // Wait for the thread to finish
   pid_t pid = waitpid(thread.tid, NULL, __WALL);
-  if (pid == -1) return -1;  // Error to create the thread
+  if (pid == -1) return -1;  // Error waiting for the thread
 
-  // Liberar la pila del hilo
+  // Retrieve the return value
+  if (retval != NULL) *retval = thread.thread_arg->retval;
+
+  // Release the allocated resources
   free(thread.stack);
-
-  if (retval != NULL) *retval = NULL;  //  We don't have a return value
+  free(thread.thread_arg);
 
   return 0;  // Success
+}
+
+void cethread_end(void *retval) {
+  if (current_thread_arg != NULL) current_thread_arg->retval = retval;
+
+  _exit(0);  // Terminate the current thread
 }

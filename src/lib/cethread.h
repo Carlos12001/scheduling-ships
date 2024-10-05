@@ -8,8 +8,15 @@
 #endif
 
 typedef struct {
-  pid_t tid;    // id thread
-  void *stack;  // pointer to stack
+  void *(*start_routine)(void *);
+  void *arg;
+  void *retval;
+} thread_arg_t;
+
+typedef struct {
+  pid_t tid;                 // id thread
+  void *stack;               // pointer to stack
+  thread_arg_t *thread_arg;  // argument
 } cethread_t;
 
 typedef struct {
@@ -20,6 +27,7 @@ typedef struct {
 int cethread_create(cethread_t *thread, void *(*start_routine)(void *),
                     void *arg);
 int cethread_join(cethread_t thread, void **retval);
+void cethread_end(void *retval);
 int cemutex_init(cemutex *mutex);
 int cemutex_destroy(cemutex *mutex);
 int cemutex_lock(cemutex *mutex);
