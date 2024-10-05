@@ -73,16 +73,3 @@ add_test(NAME cethread_join_test COMMAND cethread_join)
 add_test(NAME cemutex_init_test COMMAND cemutex_init)
 add_test(NAME cemutex_destroy_test COMMAND cemutex_destroy)
 add_test(NAME cemutex_unlock_test COMMAND cemutex_unlock)
-
-
-
-
-
-# ------- CEMUTEX TESTS -------
-
-# Add the mutex tests
-#add_executable(cethread_mutex_init pthread_mutex_init.c)
-#set_target_properties(cethread_mutex_init PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-#target_link_libraries(cethread_mutex_init cethread)
-
-#add_test(NAME pthread_mutex_init_test COMMAND pthread_mutex_init)
