@@ -13,11 +13,32 @@ add_executable(pthread_join pthread_join.c)
 set_target_properties(pthread_join PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
 target_link_libraries(pthread_join pthread)
 
-## MUX PTHREAD TESTS
+# Add the pthread_mutex_init test
+add_executable(pthread_mutex_init pthread_mutex_init.c)
+set_target_properties(pthread_mutex_init PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(pthread_mutex_init pthread)
+
+# Add the pthread_mutex_destroy test
+add_executable(pthread_mutex_destroy pthread_mutex_destroy.c)
+set_target_properties(pthread_mutex_destroy PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(pthread_mutex_destroy pthread)
+
+# Add the pthread_mutex_unlock
+add_executable(pthread_mutex_unlock pthread_mutex_unlock.c)
+set_target_properties(pthread_mutex_unlock PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(pthread_mutex_unlock pthread)
+
 
 # Register the tests with CTest
 add_test(NAME pthread_create_test COMMAND pthread_create)
 add_test(NAME pthread_join_test COMMAND pthread_join)
+add_test(NAME pthread_mutex_init_test COMMAND pthread_mutex_init)
+add_test(NAME pthread_mutex_destroy_test COMMAND pthread_mutex_destroy)
+add_test(NAME pthread_mutex_unlock_test COMMAND pthread_mutex_unlock)
+
+
+
+
 
 # ------- CETHREAD TESTS -------
 
@@ -31,8 +52,29 @@ add_executable(cethread_join cethread_join.c)
 set_target_properties(cethread_join PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
 target_link_libraries(cethread_join cethread)
 
+# Add the cemutex_init
 
-## CEMUX TESTS
+
+# Add the cemutex_destroy
+
+
+# Add the cemutex_unlock
+
+
 
 add_test(NAME cethread_create_test COMMAND cethread_create)
 add_test(NAME cethread_join_test COMMAND cethread_join)
+
+
+
+
+
+
+# ------- CEMUTEX TESTS -------
+
+# Add the mutex tests
+#add_executable(cethread_mutex_init pthread_mutex_init.c)
+#set_target_properties(cethread_mutex_init PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+#target_link_libraries(cethread_mutex_init cethread)
+
+#add_test(NAME pthread_mutex_init_test COMMAND pthread_mutex_init)

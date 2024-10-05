@@ -21,7 +21,6 @@ int cethread_join(cethread_t thread, void **retval) {
 /**********************
 ******** Mutex ********
 ***********************/
-
 int cemutex_init(my_mutex_t *mutex) {
   atomic_flag_clear(&mutex->flag); // De stdatomic.h
 }
