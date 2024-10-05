@@ -21,17 +21,27 @@ int cethread_join(cethread_t thread, void **retval) {
 /**********************
 ******** Mutex ********
 ***********************/
-int cemutex_init(my_mutex_t *mutex) {
-  atomic_flag_clear(&mutex->flag); // De stdatomic.h
+int cemutex_init(cemutex *cm) {
+  atomic_flag_clear(&cm->flag); // De stdatomic.h
+  return 0;
 }
 
-int cemutex_destroy(cemutex *mutex) {
-  return pthread_mutex_destroy(&mutex->mutex);
+int cemutex_destroy(cemutex *cm) {
+  if (atomic_flag_test_and_set(&cm->flag)) {
+    printf("Error: intento de destruir un mutex aún bloqueado.\n");
+    return 1;
+  }
+  return 0;
 }
 
-// Implementar lock
+int cemutex_lock(cemutex *cm) {
+    while (atomic_flag_test_and_set(&cm->flag)) {
+        // Spinlock - Espera activa
+    }
+    return 0;
+}
 
-int cemutex_unlock(my_mutex_t *mutex) {
-  //return pthread_mutex_unlock(&mutex->mutex);
-  atomic_flag_clear(&mutex->flag);
+int cemutex_unlock(cemutex *cm) {
+  atomic_flag_clear(&cm->flag);
+  return 0;
 }

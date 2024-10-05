@@ -53,18 +53,26 @@ set_target_properties(cethread_join PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 target_link_libraries(cethread_join cethread)
 
 # Add the cemutex_init
-
+add_executable(cemutex_init cemutex_init.c)
+set_target_properties(cemutex_init PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(cemutex_init cethread)
 
 # Add the cemutex_destroy
-
+add_executable(cemutex_destroy cemutex_destroy.c)
+set_target_properties(cemutex_destroy PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(cemutex_destroy cethread)
 
 # Add the cemutex_unlock
-
+add_executable(cemutex_unlock cemutex_unlock.c)
+set_target_properties(cemutex_unlock PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(cemutex_unlock cethread)
 
 
 add_test(NAME cethread_create_test COMMAND cethread_create)
 add_test(NAME cethread_join_test COMMAND cethread_join)
-
+add_test(NAME cemutex_init_test COMMAND cemutex_init)
+add_test(NAME cemutex_destroy_test COMMAND cemutex_destroy)
+add_test(NAME cemutex_unlock_test COMMAND cemutex_unlock)
 
 
 
