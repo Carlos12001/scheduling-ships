@@ -1,5 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,linux,c,cmake,meson
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,linux,c,cmake,meson
+## LazyVim
+.cache/*
 
 ### C ###
 # Prerequisites
