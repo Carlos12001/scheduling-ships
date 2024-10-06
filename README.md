@@ -39,3 +39,7 @@ Modify the configuration file to set parameters for the canal:
 - Number of ships
 - Scheduling algorithm (RR, Priority, SJF, FCFS, Real-Time)
 - Flow control method
+
+## Design Hardware
+
+https://docs.google.com/spreadsheets/d/19UOhnq-4k82qcbcaTn_bHiEcXRDhYykFDQgcdTzBlP0/edit?usp=sharing
