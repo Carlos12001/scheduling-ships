@@ -1,0 +1,16 @@
+{
+  "cSpell.words": [
+    "cemutex",
+    "cethread"
+  ],
+  "files.associations": {
+    "stdlib.h": "c",
+    "stdio.h": "c",
+    "pthread.h": "c",
+    "signal.h": "c",
+    "cethread.h": "c",
+    "unistd.h": "c",
+    "shared_mutex": "c",
+    "types.h": "c"
+  }
+}
