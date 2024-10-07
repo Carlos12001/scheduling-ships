@@ -16,5 +16,4 @@ target_link_libraries(${PROJECT_NAME} cethread)
 add_subdirectory(tests)
 
 # Copy image files to the build directory (if needed)
-file(COPY gui/images/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/images)
-file(COPY config/ships.config DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config)
+file(COPY gui/gui.py DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
