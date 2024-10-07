@@ -18,10 +18,6 @@ set(CMAKE_C_STANDARD 11)
 # Support CTest
 include(CTest)
 
-
-# Enable debugging symbols
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-
 # Add subdirectories
 add_subdirectory(src)
 
