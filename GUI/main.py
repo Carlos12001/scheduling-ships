@@ -25,6 +25,11 @@ def mover_imagen(imagen_label, velocidad, imagen, y_pos):
     # Repite el movimiento cada 50ms para mantener el ciclo
     canvas.after(50, mover_imagen, imagen_label, velocidad, imagen, y_pos)
 
+
+import os
+print('Get current working directory : ', os.getcwd())
+image_src = os.getcwd()
+
 # Crear la ventana principal
 root = tk.Tk()
 root.title("Botes sobre el canal")
@@ -35,7 +40,7 @@ canvas = tk.Canvas(root, width=1600, height=800)
 canvas.pack()
 
 # Cargar la imagen de fondo (mar)
-fondo_mar = Image.open("C:/Users/Felipe vargas/Downloads/scheduling-ships/GUI/mar_fondo.gif")  # Asegúrate de tener una imagen llamada 'mar_fondo.gif'
+fondo_mar = Image.open( image_src+ "/GUI/mar_fondo.gif")  # Asegúrate de tener una imagen llamada 'mar_fondo.gif'
 fondo_mar = fondo_mar.resize((1600, 800))  # Ajustar el tamaño al tamaño del canvas
 fondo_mar_img = ImageTk.PhotoImage(fondo_mar)
 canvas.create_image(0, 0, anchor=tk.NW, image=fondo_mar_img)  # Colocar la imagen del mar de fondo
@@ -49,15 +54,15 @@ canvas.create_rectangle(1400, 100, 1550, 600, outline='blue', width=3)
 canvas.create_text(1475, 80, text="Zona de Espera 2", font=("Arial", 16), fill="blue")
 
 # Cargar las imágenes de los botes y redimensionarlas al 40% menos
-bote_img_original = Image.open("C:/Users/Felipe vargas/Downloads/scheduling-ships/GUI/pesquero.gif")
+bote_img_original = Image.open(image_src+"/GUI/pesquero.gif")
 bote_img_reducida = bote_img_original.resize((int(bote_img_original.width * 0.2), int(bote_img_original.height * 0.2)))
 bote_img = ImageTk.PhotoImage(bote_img_reducida)
 
-norma_img_original = Image.open("C:/Users/Felipe vargas/Downloads/scheduling-ships/GUI/norma.gif")
+norma_img_original = Image.open(image_src+"/GUI/norma.gif")
 norma_img_reducida = norma_img_original.resize((int(norma_img_original.width * 0.2), int(norma_img_original.height * 0.2)))
 norma_img = ImageTk.PhotoImage(norma_img_reducida)
 
-policia_img_original = Image.open("C:/Users/Felipe vargas/Downloads/scheduling-ships/GUI/policia.gif")
+policia_img_original = Image.open(image_src+"/GUI/policia.gif")
 policia_img_reducida = policia_img_original.resize((int(policia_img_original.width * 0.2), int(policia_img_original.height * 0.2)))
 policia_img = ImageTk.PhotoImage(policia_img_reducida)
 
