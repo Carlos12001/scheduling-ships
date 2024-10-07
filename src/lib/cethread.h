@@ -8,7 +8,7 @@
 
 #ifndef STACK_SIZE
 #define STACK_SIZE (1024 * 1024)  // 1MiB
-#endif
+#endif // STACK_SIZE
 
 typedef struct {
   void *(*start_routine)(void *);
