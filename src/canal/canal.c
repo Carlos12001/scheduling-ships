@@ -21,7 +21,8 @@ void Canal_init(const char *nombre_archivo) {
     Canal.managed_boats=0;
     Canal.running=true;
     Canal.direction=false;
-    Canal.Emergency=false;
+    Canal.RightEmergency=false;
+    Canal.LeftEmergency=false;
     Canal.Emergencyswitch=false;
     Canal.EmergencyAmount=0;
     
@@ -142,34 +143,42 @@ void* boatmover(void *arg){
         if((boat2move.position==Canal.size-1)&&(Canal.direction)){//El barco debe salir por la derecha
             pthread_mutex_lock(&canal_mutex);
             Canal.canal[Canal.size-1]=emptyboat;
-            canalcontent();
             Canal.boats_in--;
             pthread_mutex_unlock(&canal_mutex);
+
             if(boat2move.typeboat==3){
                 Canal.EmergencyAmount--;
                 if(Canal.EmergencyAmount==0){
-                    if(Canal.Emergencyswitch=true){
+                    if(Canal.Emergencyswitch){
                         Canal.direction=!Canal.direction;
+                        Canal.Emergencyswitch=false;
+
                     }
-                    Canal.Emergency=false;
+                    Canal.LeftEmergency=false;
+
                 }
             }
+            canalcontent();
+
             break;
         }else if((boat2move.position==0) && (!Canal.direction)){//El barco debe salir por la izquierda
             pthread_mutex_lock(&canal_mutex);
             Canal.canal[0]=emptyboat;
-            canalcontent();
             Canal.boats_in--;
             pthread_mutex_unlock(&canal_mutex);
+
             if(boat2move.typeboat==3){
                 Canal.EmergencyAmount--;
+                
                 if(Canal.EmergencyAmount==0){//No hay Mas emergencias en el canal
-                    if(Canal.Emergencyswitch=true){
+                    if(Canal.Emergencyswitch){
                         Canal.direction=!Canal.direction;
+                        Canal.Emergencyswitch=false;
                     }
-                    Canal.Emergency=false;
+                    Canal.RightEmergency=false;
                 }
             }
+            canalcontent();
             break;
         }else if(Canal.canal[boat2move.position+1].ID!=-1 && Canal.direction){//Hay un barco ocupando el lugar
             continue;
@@ -207,7 +216,7 @@ void canalcontent(){
     }
     fprintf(archivo,"\nDirection: %s",(Canal.direction) ? ("Right"):("Left"));
     fprintf(archivo,"\nYellow Light: %s", (Canal.Yellowlight)?("true"):("false"));
-    fprintf(archivo,"\nEmergency: %s", (Canal.Emergency)?("true"):("false"));
+    fprintf(archivo,"\nEmergency: %s", (Canal.LeftEmergency||Canal.RightEmergency)?("true"):("false"));
     fprintf(archivo,"\nLeft:[");
     for (int i = 0; i < left_sea.capacity; i++) {
         boat boatprinter=left_sea.waiting[i];
@@ -268,10 +277,8 @@ void BoatGUI(){
             boattype=3; //Cambiar a barco patrulla
         }else if (strcmp(respuesta, "r") == 0) {
             addboatdummy(true,boattype);//Agregar barco a la derecha
-            printf("Right %d\n", right_sea.capacity);
         }else if (strcmp(respuesta, "l") == 0) {
             addboatdummy(false,boattype);//Agregar barco a la izquierda
-            printf("Left %d\n", left_sea.capacity);
         }
 
     }
@@ -297,8 +304,8 @@ void * Canal_Schedule(void *arg){
 
     //hilo Emergencias aca
     while (Canal.running){
-        if(Canal.Emergency){
-            printf("Emergency");
+        if(Canal.LeftEmergency||Canal.RightEmergency){
+            ;
         }else if(Canal.scheduling==1){//W
             if(w==Canal.W){
                 YellowCanal();//Esperar a que los barcos crucen
@@ -371,7 +378,6 @@ int EnterCanal(int Waitpos,bool queue){
         Canal.boats_in++;
         canalcontent();
         pthread_mutex_unlock(&canal_mutex);
-
         if (pthread_create(&Canal.canal[newboat.position].thread, NULL,(void*) &boatmover, (void*)NULL) != 0) {
             fprintf(stderr, "Error al crear el hilo\n");
         return 0;
@@ -415,28 +421,33 @@ void * SoundEmergency(void * arg){
                 EmergencyProtocol(true,i);
             }
         }
-        usleep(1000);
+        usleep(10);
     }
 }
 
 void EmergencyProtocol(bool side, int index){     
-    Canal.Emergency=true; 
     boat EmergencyBoat;
     if(side){//La cola derecha tine una emergencia
+        Canal.RightEmergency=true;
         EmergencyBoat = right_sea.waiting[index];
-        if(Canal.direction){//La direccion actual es contraria espera el fin de botes y envia directamente la patrulla
+        if(Canal.direction && !Canal.Yellowlight){//La direccion actual es contraria espera el fin de botes y envia directamente la patrulla
             YellowCanal();
             Canal.Emergencyswitch=true;
             Canal.direction=!Canal.direction;
+        }else if(Canal.direction && Canal.Yellowlight){//La direccion actual es contraria pero espera por q ya hay un cambio de direccion
+            YellowCanal();
         }else{//Direccion actual es la misma hay que evaluar tiempo real
             WaitRealTime(EmergencyBoat);//Espera a que el bote pueda correr en el deadline
         }
     }else{//La cola izquierda tiene una emergencia
+        Canal.LeftEmergency=true;
         EmergencyBoat = left_sea.waiting[index];
-        if(!Canal.direction){//La direccion actual es contraria espera el fin de botes y envia directamente la patrulla
+        if(!Canal.direction && !Canal.Yellowlight){//La direccion actual es contraria espera el fin de botes y envia directamente la patrulla
             YellowCanal();
             Canal.Emergencyswitch=true;
             Canal.direction=!Canal.direction;
+        }else if(!Canal.direction && Canal.Yellowlight){//La direccion actual es contraria pero espera por q ya hay un cambio de direccion
+            YellowCanal();
         }else{
             WaitRealTime(EmergencyBoat);
         }

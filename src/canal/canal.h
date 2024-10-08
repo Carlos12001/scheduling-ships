@@ -46,7 +46,8 @@ typedef struct {
     bool running;
     bool Yellowlight;//Esta variable es sobre todo para interfaz, una especie de alerta de luz amarilla
     
-    bool Emergency;
+    bool LeftEmergency;
+    bool RightEmergency;
     bool Emergencyswitch;
     int EmergencyAmount;
 
