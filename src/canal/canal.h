@@ -45,6 +45,11 @@ typedef struct {
     bool direction;//True derecha, false izquierda
     bool running;
     bool Yellowlight;//Esta variable es sobre todo para interfaz, una especie de alerta de luz amarilla
+    
+    bool Emergency;
+    bool Emergencyswitch;
+    int EmergencyAmount;
+
 }canal;
 
 
@@ -77,8 +82,16 @@ void BoatGUI();
 
 void YellowCanal();
 
-int EnterCanal();
+void EmergencyYellowCanal();
 
-boat GetEnterBoat();
+int EnterCanal(int Waitpos,bool queue);
 
+boat GetEnterBoat(int index,bool queue);
+
+void * SoundEmergency(void * arg);
+
+void EmergencyProtocol(bool side,int index);
+
+
+void WaitRealTime(boat Emergencyboat);
 #endif // CANAL_H;

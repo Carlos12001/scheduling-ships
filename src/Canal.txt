@@ -1,3 +1,6 @@
--1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 
-Left:[]
+0 0 0 0 0 0 0 0 0 0 0 0 
+Direction: Left
+Yellow Light: false
+Emergency: false
+Left:[3 ]
 Right:[]
