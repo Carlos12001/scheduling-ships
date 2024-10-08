@@ -198,9 +198,10 @@
 // }
 
 #include <stdio.h>
-#include <stdlib.h>
+
+#include "lib/cethread.h"
 
 int main() {
-  printf("Hello, World!\n");
+  printf("Welcome to Scheduling Ships");
   return 0;
 }

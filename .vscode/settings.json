@@ -11,6 +11,8 @@
     "cethread.h": "c",
     "unistd.h": "c",
     "shared_mutex": "c",
-    "types.h": "c"
+    "types.h": "c",
+    "stdbool.h": "c",
+    "numbers": "c"
   }
 }
