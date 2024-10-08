@@ -23,3 +23,6 @@ add_subdirectory(src)
 
 # Set the project name as a variable for reuse
 set(PROJECT_NAME ${CMAKE_PROJECT_NAME})
+
+# Copy image files to the build directory (if needed)
+file(COPY images/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/images/)

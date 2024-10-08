@@ -4,41 +4,11 @@
 # Set a separate directory for the test binaries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS ${CMAKE_BINARY_DIR}/tests/bin)
 
-# ------- PTHREAD TESTS -------
+# Increase the maximum output size for passing tests
+set(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 30000)
 
-# Add the pthread_create test
-# add_executable(pthread_create pthread_create.c)
-# set_target_properties(pthread_create PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-# target_link_libraries(pthread_create pthread)
-
-# # Add the pthread_join test
-# add_executable(pthread_join pthread_join.c)
-# set_target_properties(pthread_join PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-# target_link_libraries(pthread_join pthread)
-
-# Add the pthread_mutex_init test
-# add_executable(pthread_mutex_init pthread_mutex_init.c)
-# set_target_properties(pthread_mutex_init PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-# target_link_libraries(pthread_mutex_init pthread)
-
-# # Add the pthread_mutex_destroy test
-# add_executable(pthread_mutex_destroy pthread_mutex_destroy.c)
-# set_target_properties(pthread_mutex_destroy PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-# target_link_libraries(pthread_mutex_destroy pthread)
-
-# # Add the pthread_mutex_unlock
-# add_executable(pthread_mutex_unlock pthread_mutex_unlock.c)
-# set_target_properties(pthread_mutex_unlock PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
-# target_link_libraries(pthread_mutex_unlock pthread)
-
-
-# Register the tests with CTest
-# add_test(NAME pthread_create_test COMMAND pthread_create)
-# add_test(NAME pthread_join_test COMMAND pthread_join)
-## add_test(NAME pthread_mutex_init_test COMMAND pthread_mutex_init)
-## add_test(NAME pthread_mutex_destroy_test COMMAND pthread_mutex_destroy)
-## add_test(NAME pthread_mutex_unlock_test COMMAND pthread_mutex_unlock)
-
+# Increase the maximum output size for failed tests
+set(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 30000)
 
 
 
@@ -80,6 +50,11 @@ add_executable(test_lib test_lib.c)
 set_target_properties(test_lib PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
 target_link_libraries(test_lib cethread)
 
+# Add the calendar 
+add_executable(calendar_unit calendar_unit.c)
+set_target_properties(calendar_unit PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_TESTS})
+target_link_libraries(calendar_unit cethread calendar)
+
 add_test(NAME cethread_create_test COMMAND cethread_create)
 add_test(NAME cethread_join_test COMMAND cethread_join)
 add_test(NAME cethread_end_test COMMAND cethread_end)
@@ -87,4 +62,4 @@ add_test(NAME cemutex_init_test COMMAND cemutex_init)
 add_test(NAME cemutex_destroy_test COMMAND cemutex_destroy)
 add_test(NAME cemutex_unlock_test COMMAND cemutex_unlock)
 add_test(NAME test_lib_test COMMAND test_lib)
-
+add_test(NAME calendar_test COMMAND calendar_unit)

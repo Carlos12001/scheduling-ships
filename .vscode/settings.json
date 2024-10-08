@@ -11,6 +11,12 @@
     "cethread.h": "c",
     "unistd.h": "c",
     "shared_mutex": "c",
-    "types.h": "c"
+    "types.h": "c",
+    "calendar.h": "c",
+    "stdbool.h": "c",
+    "numbers": "c",
+    "canal.h": "c",
+    "string.h": "c",
+    "time.h": "c"
   }
 }
