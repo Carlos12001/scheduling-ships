@@ -15,7 +15,9 @@ typedef struct {
   int prioridad;  // Para algoritmos de prioridad.
 } Proceso;
 
-void *calendar(int option, cethread_t *hilos, Proceso *procesos,
-               int num_procesos);
+void *calendar(int option, Proceso *procesos, int num_procesos
+               // TODO: agregar velocidad del barco mas lento
+               // TODO: flag para round robin que lo haga
+);
 
 #endif  // CALENDAR_H

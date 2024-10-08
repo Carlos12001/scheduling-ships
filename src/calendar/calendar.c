@@ -135,8 +135,7 @@ int round_robin(Proceso *procesos, int num_procesos, size_t size_struct) {
   return 0;  // Indicate successful operation
 }
 
-void *calendar(int option, cethread_t *hilos, Proceso *procesos,
-               int num_procesos) {
+void *calendar(int option, Proceso *procesos, int num_procesos) {
   switch (option) {
     case 1: {
       break;
@@ -152,43 +151,15 @@ void *calendar(int option, cethread_t *hilos, Proceso *procesos,
       break;
     }
     case 4: {
+      // TODO: revisar que la flag de round robin sea true
       round_robin(procesos, num_procesos, sizeof(Proceso));
       break;
-      // cethread_t threads[NUM_THREADS];
-      // Proceso procesos[NUM_THREADS];
-
-      // // Inicializa mutex
-      // cemutex_init(&mutex);
-
-      // // Crea los hilos
-      // for (int i = 0; i < NUM_THREADS; i++) {
-      //   procesos[i].id = i;
-      //   procesos[i].tiempo_restante =
-      //       3 + i;  // Diferentes unidades de trabajo para cada hilo
-      //   int rc =
-      //       cethread_create(&threads[i], thread_function, (void
-      //       *)&procesos[i]);
-      //   if (rc) {
-      //     fprintf(stderr, "Error al crear el hilo %d, código de error: %d\n",
-      //     i,
-      //             rc);
-      //     exit(EXIT_FAILURE);
-      //   }
-      // }
-
-      // // Espera a que todos los hilos terminen
-      // for (int i = 0; i < NUM_THREADS; i++) {
-      //   cethread_join(threads[i], NULL);
-      // }
-
-      // // Destruye mutex
-      // cemutex_destroy(&mutex);
-
-      // printf("Todos los hilos han finalizado.\n");
-      // cethread_end(NULL);
     }
     case 5: {
-      printf("Saliendo del programa.\n");
+      // TODO: ordenar a tiempo real si velocidad -1 entonces
+      // ordenar SJF
+      // SINO ordenar primero los de igual velocidad
+      // luego los los mas lentos y por ultimo los mas rapidos
       break;
     }
     default:

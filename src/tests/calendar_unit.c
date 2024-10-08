@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
   const int num_procesos = 4;
 
   for (int option = 1; option < 5; option++) {
-    calendar(option, hilos, procesos, num_procesos);
+    calendar(option, procesos, num_procesos);
     printf("------------OPCION = %d------------\n", option);
 
     // Crear hilos
