@@ -12,6 +12,7 @@
     "unistd.h": "c",
     "shared_mutex": "c",
     "types.h": "c",
+    "calendar.h": "c",
     "stdbool.h": "c",
     "numbers": "c"
   }
