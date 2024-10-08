@@ -15,6 +15,7 @@
     "calendar.h": "c",
     "stdbool.h": "c",
     "numbers": "c",
-    "canal.h": "c"
+    "canal.h": "c",
+    "string.h": "c"
   }
 }
