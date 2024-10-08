@@ -6,7 +6,8 @@ waitline right_sea;
 
 cemutex canal_mutex;
 
-boat emptyboat = {-1, -1, -1, -1};
+const cethread_t foo_thread = {-1, NULL, NULL};
+boat emptyboat = {foo_thread, -1, -1, -1, -1, -1, -1};
 
 void canal_tryout() {
   Canal_init("canal/canal.config");
@@ -105,8 +106,13 @@ void waitline_init(bool right, char *list) {
 
 void addboatdummy(bool right, int type) {
   cethread_t newthread;
-  boat newBoat = {newthread, Canal.managed_boats++, -1,
-                  Canal.boatspeeds[type - 1], type};
+  boat newBoat = {newthread,
+                  Canal.managed_boats++,
+                  -1,
+                  Canal.boatspeeds[type - 1],
+                  Canal.boatspeeds[type - 1] * Canal.size,
+                  Canal.boatspeeds[type - 1] * Canal.size,
+                  type};
   if (right) {
     if (right_sea.capacity == right_sea.maxcapacity) {
       printf("No se puede agregar en right\n");
@@ -182,6 +188,7 @@ void *boatmover(void *arg) {
       cemutex_lock(&canal_mutex);
       Canal.canal[boat2move.position] = emptyboat;
       boat2move.position += adder;
+      boat2move.tiempo_restante -= delay / 1e6;
       Canal.canal[boat2move.position] = boat2move;
       canalcontent();
       cemutex_unlock(&canal_mutex);

@@ -16,6 +16,7 @@
     "stdbool.h": "c",
     "numbers": "c",
     "canal.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "time.h": "c"
   }
 }

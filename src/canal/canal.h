@@ -1,7 +1,6 @@
 // canal.h
 #ifndef CANAL_H
 #define CANAL_H
-
 #include <cethread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -10,17 +9,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define MAX_LINE_LENGTH 256
+#include "../calendar/calendar.h"
 
-typedef struct {
-  cethread_t thread;
-  int ID;
-  int position;
-  int speed;     // default speed
-  int typeboat;  // type: 1 Normal
-                 //       2 Fishing
-                 //       3 Patrol
-} boat;
+#define MAX_LINE_LENGTH 256
 
 typedef struct {
   boat waiting[5];

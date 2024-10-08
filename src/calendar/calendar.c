@@ -24,25 +24,25 @@ int find_next_thread(int current) {
 // Función que cada hilo ejecutará
 // Función que cada hilo ejecutará
 void *thread_function(void *arg) {
-  Proceso *info = (Proceso *)arg;
+  boat *info = (boat *)arg;
 
   while (1) {
     cemutex_lock(&mutex);
 
     // Verifica si es su turno y si aún tiene trabajo
-    if (current_thread == info->id && !thread_finished[info->id]) {
+    if (current_thread == info->ID && !thread_finished[info->ID]) {
       // Simula la ejecución del hilo
       printf("Hilo %d está ejecutando. Unidades de trabajo restantes: %d\n",
-             info->id, info->tiempo_restante);
+             info->ID, info->tiempo_restante);
       cemutex_unlock(&mutex);  // Libera el mutex antes de dormir
       sleep(QUANTUM_SEC);      // Simula el quantum
 
       cemutex_lock(&mutex);  // Re-adquiere el mutex después de dormir
       info->tiempo_restante--;
       if (info->tiempo_restante == 0) {
-        printf("Hilo %d ha terminado.\n", info->id);
+        printf("Hilo %d ha terminado.\n", info->ID);
         threads_done++;
-        thread_finished[info->id] = 1;
+        thread_finished[info->ID] = 1;
       }
 
       // Asigna el turno al siguiente hilo activo
@@ -94,34 +94,34 @@ int leerEnteroPositivo(const char *mensaje) {
 }
 
 int comparar_por_tiempo(const void *a, const void *b) {
-  Proceso *p1 = (Proceso *)a;
-  Proceso *p2 = (Proceso *)b;
+  boat *p1 = (boat *)a;
+  boat *p2 = (boat *)b;
   return p1->tiempo_total - p2->tiempo_total;
 }
 
 int comparar_por_prioridad(const void *a, const void *b) {
-  Proceso *p1 = (Proceso *)a;
-  Proceso *p2 = (Proceso *)b;
-  return p1->prioridad - p2->prioridad;
+  boat *p1 = (boat *)a;
+  boat *p2 = (boat *)b;
+  return p1->typeboat - p2->typeboat;
 }
 
 void *rutina(void *arg) {
-  Proceso *p = (Proceso *)arg;
-  printf("Iniciando proceso %d con tiempo de ejecución %d\n", p->id,
+  boat *p = (boat *)arg;
+  printf("Iniciando proceso %d con tiempo de ejecución %d\n", p->ID,
          p->tiempo_total);
   sleep(p->tiempo_total);  // Simula tiempo de ejecución.
-  printf("Proceso %d completado\n", p->id);
+  printf("boat %d completado\n", p->ID);
   return NULL;
 }
 
-int round_robin(Proceso *procesos, int num_procesos, size_t size_struct) {
+int round_robin(boat *procesos, int num_procesos, size_t size_struct) {
   // Ensure there are at least two processes to rotate
   if (num_procesos <= 1) {
     return 0;  // No rotation needed
   }
 
   // Temporary storage for the first process
-  Proceso temp;
+  boat temp;
 
   // Copy the first process into the temporary variable
   memcpy(&temp, procesos, size_struct);
@@ -135,24 +135,24 @@ int round_robin(Proceso *procesos, int num_procesos, size_t size_struct) {
   return 0;  // Indicate successful operation
 }
 
-void *calendar(int option, Proceso *procesos, int num_procesos) {
+void *calendar(int option, boat *procesos, int num_procesos) {
   switch (option) {
     case 1: {
       break;
     }
     case 2: {
       // Ordenar procesos por tiempo de ejecución
-      qsort(procesos, num_procesos, sizeof(Proceso), comparar_por_tiempo);
+      qsort(procesos, num_procesos, sizeof(boat), comparar_por_tiempo);
       break;
     }
     case 3: {
       // Ordenar procesos por tiempo de ejecución
-      qsort(procesos, num_procesos, sizeof(Proceso), comparar_por_prioridad);
+      qsort(procesos, num_procesos, sizeof(boat), comparar_por_prioridad);
       break;
     }
     case 4: {
       // TODO: revisar que la flag de round robin sea true
-      round_robin(procesos, num_procesos, sizeof(Proceso));
+      round_robin(procesos, num_procesos, sizeof(boat));
       break;
     }
     case 5: {

@@ -4,16 +4,16 @@
 
 #include "../calendar/calendar.h"
 void *rutina(void *arg) {
-  Proceso *p = (Proceso *)arg;
+  boat *p = (boat *)arg;
   sleep(p->tiempo_total);  // Simula tiempo de ejecución.
   return NULL;
 }
 
-void print_processes(Proceso *procesos, int num_procesos) {
+void print_processes(boat *procesos, int num_procesos) {
   for (int i = 0; i < num_procesos; i++) {
-    printf("ID: %d, T.Time: %d, Reaming: %d, P: %d\n", procesos[i].id,
+    printf("ID: %d, T.Time: %.2f, Reaming: %.2f, P: %d\n", procesos[i].ID,
            procesos[i].tiempo_total, procesos[i].tiempo_restante,
-           procesos[i].prioridad);
+           procesos[i].typeboat);
   }
   printf("\n\n");
 }
@@ -22,11 +22,10 @@ void print_processes(Proceso *procesos, int num_procesos) {
 int main(int argc, char *argv[]) {
   // Crear algunos hilos de ejemplo
   cethread_t hilos[4];
-  Proceso procesos[4] = {
-      {1, 2, 2, 3},  // ID, tiempo de ejecución, tiempo restante, prioridad
-      {2, 1, 1, 2},
-      {3, 4, 4, 1},
-      {4, 3, 3, 4}};
+  boat procesos[4] = {{hilos[0], 10, -2, -1, 2, 2, 3},
+                      {hilos[1], 20, -2, -1, 1, 1, 2},
+                      {hilos[2], 30, -2, -1, 4, 4, 1},
+                      {hilos[3], 40, -2, -1, 3, 3, 4}};
   const int num_procesos = 4;
 
   for (int option = 1; option < 5; option++) {
