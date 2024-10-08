@@ -19,12 +19,9 @@ typedef struct {
   int typeboat;  // type: 1 Normal
                  //       2 Fishing
                  //       3 Patrol
-
 } boat;
 
-void *calendar(int option, boat *procesos, int num_procesos
-               // TODO: agregar velocidad del barco mas lento
-               // TODO: flag para round robin que lo haga
-);
+void *calendar(int option, boat *procesos, int num_procesos,
+               int round_robin_flag, int slowest_boat);
 
 #endif  // CALENDAR_H
