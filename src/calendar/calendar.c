@@ -1,7 +1,7 @@
 #include "calendar.h"
 
 #define NUM_THREADS 3
-#define QUANTUM_SEC 1      // Duración del quantum en segundos
+#define QUANTUM_mSEC 1000      // Duración del quantum en segundos
 #define SLEEP_USEC 100000  // Tiempo de espera en microsegundos (0.1 segundos)
 
 cemutex mutex;
@@ -32,10 +32,10 @@ void *thread_function(void *arg) {
     // Verifica si es su turno y si aún tiene trabajo
     if (current_thread == info->ID && !thread_finished[info->ID]) {
       // Simula la ejecución del hilo
-      printf("Hilo %d está ejecutando. Unidades de trabajo restantes: %d\n",
+      printf("Hilo %d está ejecutando. Unidades de trabajo restantes: %f\n",
              info->ID, info->tiempo_restante);
       cemutex_unlock(&mutex);  // Libera el mutex antes de dormir
-      sleep(QUANTUM_SEC);      // Simula el quantum
+      sleep(QUANTUM_mSEC);      // Simula el quantum
 
       cemutex_lock(&mutex);  // Re-adquiere el mutex después de dormir
       info->tiempo_restante--;
@@ -107,7 +107,7 @@ int comparar_por_prioridad(const void *a, const void *b) {
 
 void *rutina(void *arg) {
   boat *p = (boat *)arg;
-  printf("Iniciando proceso %d con tiempo de ejecución %d\n", p->ID,
+  printf("Iniciando proceso %d con tiempo de ejecución %f\n", p->ID,
          p->tiempo_total);
   sleep(p->tiempo_total);  // Simula tiempo de ejecución.
   printf("boat %d completado\n", p->ID);
@@ -135,7 +135,7 @@ int round_robin(boat *procesos, int num_procesos, size_t size_struct) {
   return 0;  // Indicate successful operation
 }
 
-void *calendar(int option, boat *procesos, int num_procesos) {
+void *calendar(int option, boat *procesos, int num_procesos,int ms,boat slowestboat) {
   switch (option) {
     case 1: {
       break;
@@ -151,8 +151,10 @@ void *calendar(int option, boat *procesos, int num_procesos) {
       break;
     }
     case 4: {
-      // TODO: revisar que la flag de round robin sea true
-      round_robin(procesos, num_procesos, sizeof(boat));
+      if (QUANTUM_mSEC<ms){
+        round_robin(procesos, num_procesos, sizeof(boat));
+      }
+
       break;
     }
     case 5: {

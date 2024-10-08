@@ -11,6 +11,7 @@ boat emptyboat = {foo_thread, -1, -1, -1, -1, -1, -1};
 
 void canal_tryout() {
   Canal_init("canal/canal.config");
+  canalcontent();
   BoatGUI();
   destroy_canal();
 }
@@ -23,6 +24,7 @@ void Canal_init(const char *nombre_archivo) {
   Canal.LeftEmergency = false;
   Canal.Emergencyswitch = false;
   Canal.EmergencyAmount = 0;
+  Canal.RRiter=0;
 
   FILE *file;
   char line[MAX_LINE_LENGTH];
@@ -42,28 +44,34 @@ void Canal_init(const char *nombre_archivo) {
     line[strcspn(line, "\n")] = 0;
     // Separa la clave y el valor
     if (sscanf(line, "%127[^=]=%127s", clave, valor) == 2) {
-      if (strcmp(clave, "length") == 0) {
-        Canal.size = atoi(valor);
-        create_canal();
-      } else if (strcmp(clave, "metodo") == 0) {
-        Canal.scheduling = atoi(valor);
-      } else if (strcmp(clave, "W") == 0) {
-        Canal.W = atoi(valor);
-      } else if (strcmp(clave, "tiempo") == 0) {
-        Canal.time = atoi(valor);
-      } else if (strcmp(clave, "velocidad") == 0) {
-        Canal.boatspeeds[0] = atoi(&valor[0]);
-        Canal.boatspeeds[1] = atoi(&valor[2]);
-        Canal.boatspeeds[2] = atoi(&valor[4]);
-      } else if (strcmp(clave, "left") == 0) {
-        left_sea.capacity = 0;
-        left_sea.maxcapacity = 5;
-        waitline_init(false, valor);
-      } else if (strcmp(clave, "right") == 0) {
-        right_sea.capacity = 0;
-        right_sea.maxcapacity = 5;
-        waitline_init(true, valor);
-      }
+        if (strcmp(clave, "length") == 0) {
+            Canal.size = atoi(valor);
+            create_canal();
+        } else if (strcmp(clave, "c_schedule") == 0) {
+            Canal.canal_scheduling = atoi(valor);
+        } else if (strcmp(clave, "W") == 0) {
+            Canal.W = atoi(valor);
+        } else if (strcmp(clave, "time") == 0) {
+            Canal.time = atoi(valor);
+        } else if (strcmp(clave, "speed") == 0) {
+            Canal.boatspeeds[0] = atoi(&valor[0]);
+            Canal.boatspeeds[1] = atoi(&valor[2]);
+            Canal.boatspeeds[2] = atoi(&valor[4]);
+        } else if (strcmp(clave, "left") == 0) {
+            left_sea.capacity = 0;
+            waitline_init(false, valor);
+            calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,Canal.RRiter,emptyboat);//Aca busco el barco mas lento actual
+        } else if (strcmp(clave, "right") == 0) {
+            right_sea.capacity = 0;
+            waitline_init(true, valor);
+            calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,Canal.RRiter,emptyboat);//Aca busco el barco mas lento
+        }else if (strcmp(clave, "queuelength") == 0) {
+            right_sea.maxcapacity=atoi(valor);
+            left_sea.maxcapacity=atoi(valor);
+            waitline_create();
+        }else if (strcmp(clave, "t_schedule") == 0) {
+            Canal.thread_scheduling=atoi(valor);
+        }
     }
   }
   // Cierra el archivo
@@ -83,25 +91,25 @@ void create_canal() {
     Canal.canal[i] = emptyboat;
   }
 
-  canalcontent();
 }
 
-void destroy_canal() { free(Canal.canal); }
+void destroy_canal() { 
+    free(right_sea.waiting);
+    free(left_sea.waiting);
+    free(Canal.canal); 
+}
 
 void waitline_init(bool right, char *list) {
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < atoi(&list[i * 2]); j++) {
       addboatdummy(right, i + 1);
-      continue;
-      if (right) {
-        // Aqui creo el hilo y uso vector_add(&mar_derecho,newthread);
-        ;
-      } else {
-        // Aqui creo el hilo y uso vector_add(&mar_izquierdo,newthread);
-        ;
-      }
     }
   }
+}
+
+void waitline_create() {
+  right_sea.waiting = malloc(right_sea.maxcapacity * sizeof(boat));
+  left_sea.waiting = malloc(left_sea.maxcapacity * sizeof(boat));
 }
 
 void addboatdummy(bool right, int type) {
@@ -110,8 +118,8 @@ void addboatdummy(bool right, int type) {
                   Canal.managed_boats++,
                   -1,
                   Canal.boatspeeds[type - 1],
-                  Canal.boatspeeds[type - 1] * Canal.size,
-                  Canal.boatspeeds[type - 1] * Canal.size,
+                  (1/Canal.boatspeeds[type - 1]) * Canal.size,
+                  (1/Canal.boatspeeds[type - 1]) * Canal.size,
                   type};
   if (right) {
     if (right_sea.capacity == right_sea.maxcapacity) {
@@ -279,8 +287,12 @@ void BoatGUI() {
       boattype = 3;  // Cambiar a barco patrulla
     } else if (strcmp(respuesta, "r") == 0) {
       addboatdummy(true, boattype);  // Agregar barco a la derecha
+      calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,0,emptyboat);
+
     } else if (strcmp(respuesta, "l") == 0) {
       addboatdummy(false, boattype);  // Agregar barco a la izquierda
+      calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,0,emptyboat);
+
     }
   }
 
@@ -296,6 +308,7 @@ void *Canal_Schedule(void *arg) {
   time_t start_time, current_time;
   start_time = time(NULL);
   int w = 0;
+  int timer=0;
 
   cethread_t Emergency_thread;  // Identificador del hilo
 
@@ -306,9 +319,16 @@ void *Canal_Schedule(void *arg) {
 
   // hilo Emergencias aca
   while (Canal.running) {
+    if(Canal.thread_scheduling==4){
+        Canal.RRiter++;
+        Canal.RRiter=(Canal.RRiter)%1002;
+
+        calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,Canal.RRiter,emptyboat);
+        calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,Canal.RRiter,emptyboat);
+    }
     if (Canal.LeftEmergency || Canal.RightEmergency) {
       ;
-    } else if (Canal.scheduling == 1) {  // W
+    } else if (Canal.canal_scheduling == 1) {  // W
       if (w == Canal.W) {
         YellowCanal();  // Esperar a que los barcos crucen
         w = 0;
@@ -316,7 +336,7 @@ void *Canal_Schedule(void *arg) {
       } else {  // No se han cumplido los tiempos
         w += EnterCanal(0, !Canal.direction);
       }
-    } else if (Canal.scheduling == 2) {  // Time
+    } else if (Canal.canal_scheduling == 2) {  // Time
       current_time = time(NULL);
 
       if (difftime(current_time, start_time) >= (float)Canal.time) {
@@ -326,7 +346,7 @@ void *Canal_Schedule(void *arg) {
       } else {
         EnterCanal(0, !Canal.direction);
       }
-    } else if (Canal.scheduling == 3) {  // Modo tico
+    } else if (Canal.canal_scheduling == 3) {  // Modo tico
       if (Canal.direction) {
         if (left_sea.capacity == 0) {
           YellowCanal();
@@ -360,9 +380,27 @@ void YellowCanal() {
     if (Canal.boats_in == 0) {
       Canal.Yellowlight = false;
     }
+    if(Canal.thread_scheduling==4){
+        Canal.RRiter++;
+        Canal.RRiter=(Canal.RRiter)%1002;
+        calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,Canal.RRiter,emptyboat);
+        calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,Canal.RRiter,emptyboat);
+    }
+    
     usleep(1000);
   }
 }
+
+void EmergencyYellowCanal() {
+  Canal.Yellowlight = true;
+  while (Canal.Yellowlight) {
+    if (Canal.boats_in == 0) {
+      Canal.Yellowlight = false;
+    }
+    usleep(1000);
+  }
+}
+
 
 int EnterCanal(int Waitpos, bool queue) {
   int newposition = (Canal.direction) ? (0) : (Canal.size - 1);
@@ -439,14 +477,14 @@ void EmergencyProtocol(bool side, int index) {
     if (Canal.direction &&
         !Canal.Yellowlight) {  // La direccion actual es contraria espera el fin
                                // de botes y envia directamente la patrulla
-      YellowCanal();
+      EmergencyYellowCanal();
       Canal.Emergencyswitch = true;
       Canal.direction = !Canal.direction;
     } else if (Canal.direction &&
                Canal.Yellowlight) {  // La direccion actual es contraria pero
                                      // espera por q ya hay un cambio de
                                      // direccion
-      YellowCanal();
+      EmergencyYellowCanal();
     } else {  // Direccion actual es la misma hay que evaluar tiempo real
       WaitRealTime(
           EmergencyBoat);  // Espera a que el bote pueda correr en el deadline

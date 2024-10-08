@@ -14,7 +14,7 @@
 #define MAX_LINE_LENGTH 256
 
 typedef struct {
-  boat waiting[5];
+  boat *waiting;
   int maxcapacity;
   int capacity;
 } waitline;
@@ -27,9 +27,16 @@ typedef struct {
   int time;
   boat *canal;
   int boatspeeds[3];
-  int scheduling;  // 0 igual
-                   // 1 semaforo
-                   // 2 tico
+  int canal_scheduling; // 1 igual
+                        // 2 semaforo
+                        // 3 tico
+
+  int thread_scheduling;// 1 FCFS
+                        // 2 SJF
+                        // 3 Prioridad
+                        // 4 RR
+                        // 3 RealTime
+                        
   bool direction;  // True derecha, false izquierda
   bool running;
   bool Yellowlight;  // Esta variable es sobre todo para interfaz, una especie
@@ -39,6 +46,10 @@ typedef struct {
   bool RightEmergency;
   bool Emergencyswitch;
   int EmergencyAmount;
+
+  int RRiter;
+
+  
 
 } canal;
 
@@ -51,6 +62,7 @@ void canal_tryout();
 void Canal_init(const char *nombre_archivo);
 
 void create_canal();
+void waitline_create();
 void destroy_canal();
 
 void waitline_init(bool right, char *list);
@@ -68,6 +80,7 @@ void *Canal_Schedule(void *arg);
 void BoatGUI();
 
 void YellowCanal();
+void EmergencyYellowCanal();
 
 void EmergencyYellowCanal();
 

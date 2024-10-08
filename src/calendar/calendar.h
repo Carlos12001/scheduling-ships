@@ -22,9 +22,6 @@ typedef struct {
 
 } boat;
 
-void *calendar(int option, boat *procesos, int num_procesos
-               // TODO: agregar velocidad del barco mas lento
-               // TODO: flag para round robin que lo haga
-);
+void *calendar(int option, boat *procesos, int num_procesos,int ms,boat slowestboat);
 
 #endif  // CALENDAR_H
