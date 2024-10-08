@@ -6,8 +6,7 @@ waitline right_sea;
 
 cemutex canal_mutex;
 
-const cethread_t foo_thread = {-1, NULL, NULL};
-boat emptyboat = {foo_thread, -1, -1, -1, -1, -1, -1};
+boat emptyboat = {{-1, NULL, NULL}, -1, -1, -1, -1, -1, -1};
 
 void canal_tryout() {
   Canal_init("canal/canal.config");
