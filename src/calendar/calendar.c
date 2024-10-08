@@ -22,7 +22,6 @@ int find_next_thread(int current) {
 }
 
 // Función que cada hilo ejecutará
-// Función que cada hilo ejecutará
 void *thread_function(void *arg) {
   Proceso *info = (Proceso *)arg;
 
@@ -135,7 +134,7 @@ int round_robin(Proceso *procesos, int num_procesos, size_t size_struct) {
   return 0;  // Indicate successful operation
 }
 
-void *calendar(int option, Proceso *procesos, int num_procesos) {
+void *calendar(int option, Proceso *procesos, int num_procesos, int round_robin_flag, int slowest_boat) {
   switch (option) {
     case 1: {
       break;
@@ -146,16 +145,23 @@ void *calendar(int option, Proceso *procesos, int num_procesos) {
       break;
     }
     case 3: {
-      // Ordenar procesos por tiempo de ejecución
+      // Ordenar procesos por prioridad de ejecución
       qsort(procesos, num_procesos, sizeof(Proceso), comparar_por_prioridad);
       break;
     }
     case 4: {
-      // TODO: revisar que la flag de round robin sea true
-      round_robin(procesos, num_procesos, sizeof(Proceso));
+      if (round_robin_flag)
+        round_robin(procesos, num_procesos, sizeof(Proceso));
       break;
     }
     case 5: {
+      if (slowest_boat == -1) {
+        // Ordenar procesos por tiempo de ejecución
+        qsort(procesos, num_procesos, sizeof(Proceso), comparar_por_tiempo);
+      } else {
+          // Pendiente: Sino
+      }
+
       // TODO: ordenar a tiempo real si velocidad -1 entonces
       // ordenar SJF
       // SINO ordenar primero los de igual velocidad
