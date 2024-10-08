@@ -6,11 +6,14 @@ include_directories(${CMAKE_SOURCE_DIR}/src/lib)
 # Add subdirectory for the library code
 add_subdirectory(lib)
 
+# Add subdirectory for the calendar
+add_subdirectory(calendar)
+
 # Define the main executable, using $(PROJECT_NAME)
 add_executable(${PROJECT_NAME} main.c)
 
 # Link the main executable with the CEThreads library
-target_link_libraries(${PROJECT_NAME} cethread)
+target_link_libraries(${PROJECT_NAME} cethread calendar)
 
 # Add the tests
 add_subdirectory(tests)
