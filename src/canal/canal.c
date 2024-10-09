@@ -1,5 +1,17 @@
 #include "canal.h"
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <sys/socket.h>
+
+int server_fd = -1;
+int client_fd = -1;
+static cemutex socket_mutex;
+static size_t message_id = 0;
+
 canal Canal;
 waitline left_sea;
 waitline right_sea;
@@ -9,9 +21,166 @@ cemutex canal_mutex;
 boat emptyboat = {{-1, NULL, NULL}, -1, -1, -1, -1, -1, -1};
 
 void canal_tryout() {
+  if (cemutex_init(&canal_mutex) != 0) {
+    perror("Error to initialize canal_mutex");
+    return;
+  }
+  start_server();
   Canal_init("canal/canal.config");
   BoatGUI();
   destroy_canal();
+}
+
+void init_server_socket() {
+  struct sockaddr_in address;
+  int opt = 1;
+  int addrlen = sizeof(address);
+
+  // create a socket object
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    perror("Error to create socket");
+    exit(EXIT_FAILURE);
+  }
+
+  // set socket option SO_REUSEADDR and SO_REUSEPORT
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+                 sizeof(opt))) {
+    perror("Error in setsockopt");
+    exit(EXIT_FAILURE);
+  }
+
+  // set server address and port
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr =
+      INADDR_ANY;  //  accept connections from any interface
+  address.sin_port = htons(SOCKET_PORT);
+
+  // link server_fd with address
+  if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    perror("Error on bind");
+    exit(EXIT_FAILURE);
+  }
+
+  // listening for entries connections
+  if (listen(server_fd, 3) < 0) {
+    perror("Error on listen");
+    exit(EXIT_FAILURE);
+  }
+  const int port = SOCKET_PORT;
+  printf("Server listening on port %d, waiting for connections...\n", port);
+}
+
+void *accept_connections(void *arg) {
+  struct sockaddr_in address;
+  int addrlen = sizeof(address);
+
+  while (1) {
+    // accept the incoming connection
+    int new_client_fd =
+        accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+    if (new_client_fd < 0) {
+      perror("Error in accept");
+      continue;
+    }
+
+    printf("Client connected with fd %d\n", new_client_fd);
+
+    // protect the access to client_fd with the mutex
+    cemutex_lock(&socket_mutex);
+    client_fd = new_client_fd;
+    cemutex_unlock(&socket_mutex);
+  }
+  return NULL;
+}
+
+void start_server() {
+  if (cemutex_init(&socket_mutex) != 0) {
+    perror("Error to initialize socket_mutex");
+    return;
+  }
+  // init_server_socket();
+  init_server_socket();
+
+  // ignore SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+
+  // create the accept thread
+  cethread_t accept_thread;
+  if (cethread_create(&accept_thread, accept_connections, NULL) != 0) {
+    fprintf(stderr, "Error to create accept_thread\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
+int send_data() {
+  // ------------------- Send message to GUI ---------------------
+  char buffer[BUFFER_SIZE];
+  int offset = 0;
+  int n;
+  // build the content to send
+  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "Canal: ");
+  for (int i = 0; i < Canal.size; i++) {
+    boat boatprinter = Canal.canal[i];
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%d ",
+                       boatprinter.typeboat);
+  }
+  offset +=
+      snprintf(buffer + offset, sizeof(buffer) - offset, "\nDirection: %s",
+               (Canal.direction) ? ("Right") : ("Left"));
+  offset +=
+      snprintf(buffer + offset, sizeof(buffer) - offset, "\nYellow Light: %s",
+               (Canal.Yellowlight) ? ("true") : ("false"));
+  offset += snprintf(
+      buffer + offset, sizeof(buffer) - offset, "\nEmergency: %s",
+      (Canal.LeftEmergency || Canal.RightEmergency) ? ("true") : ("false"));
+  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nLeft:[");
+  for (int i = 0; i < left_sea.capacity; i++) {
+    boat boatprinter = left_sea.waiting[i];
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%d ",
+                       boatprinter.typeboat);
+  }
+  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "]");
+  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nRight:[");
+  for (int i = 0; i < right_sea.capacity; i++) {
+    boat boatprinter = right_sea.waiting[i];
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "%d ",
+                       boatprinter.typeboat);
+  }
+  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "]\n");
+
+  // send the message
+  cemutex_lock(&socket_mutex);
+
+  if (client_fd > 0) {
+    // Set socket to non-blocking mode
+    int flags = fcntl(client_fd, F_GETFL, 0);
+    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+
+    message_id++;
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset,
+                       "Message ID: %ld\nEND_OF_MESSAGE\n", message_id);
+    n = send(client_fd, buffer, strlen(buffer), 0);
+
+    if (n < 0) {
+      if (errno == EPIPE || errno == ECONNRESET || errno == EAGAIN ||
+          errno == EWOULDBLOCK) {
+        perror("Error sending message to GUI/HW");
+        // Close the socket and clean up
+        close(client_fd);
+        client_fd = -1;
+        message_id--;
+        cemutex_unlock(&socket_mutex);
+        return -1;
+      } else {
+        perror("Unexpected error in send()");
+        // Handle other errors accordingly
+      }
+    } else {
+      printf("Sending message to GUI/HW\n");
+    }
+  }
+  cemutex_unlock(&socket_mutex);
+  return 0;
 }
 
 void Canal_init(const char *nombre_archivo) {
@@ -236,6 +405,7 @@ void canalcontent() {
 
   // Cierra el archivo
   fclose(archivo);
+  send_data();
 }
 
 void BoatGUI() {

@@ -11,6 +11,14 @@
 
 #include "../calendar/calendar.h"
 
+#ifndef SOCKET_PORT
+#define SOCKET_PORT 5000
+#endif
+
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 2048
+#endif
+
 #define MAX_LINE_LENGTH 256
 
 typedef struct {
@@ -80,4 +88,13 @@ void *SoundEmergency(void *arg);
 void EmergencyProtocol(bool side, int index);
 
 void WaitRealTime(boat Emergencyboat);
+
+void init_server_socket();
+
+void *accept_connections(void *arg);
+
+void start_server();
+
+int send_data();
+
 #endif  // CANAL_H;
