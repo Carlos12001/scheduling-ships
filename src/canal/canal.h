@@ -45,6 +45,8 @@ typedef struct {
 
   bool Yellowlight;  // Esta variable es sobre todo para interfaz, una especie
                      // de alerta de luz amarilla
+
+  bool TiempoReal;
   int RRiter;  
   int RRID;
 
@@ -82,7 +84,9 @@ int EnterCanal(int Waitpos, bool queue);
 
 boat GetEnterBoat(int index, bool queue);
 
-void WaitRealTime(boat Emergencyboat);
+boat GetSlowestBoat();
 
 void Canal_RR();
+
+void CheckRealTime();
 #endif  // CANAL_H;

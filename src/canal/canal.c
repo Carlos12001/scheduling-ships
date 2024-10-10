@@ -20,6 +20,7 @@ void Canal_init(const char *nombre_archivo) {
   Canal.managed_boats = 0;
   Canal.running = true;
   Canal.direction = false;
+  Canal.TiempoReal=true;
   Canal.RRiter=0;
   Canal.RRID=-2;
 
@@ -57,11 +58,11 @@ void Canal_init(const char *nombre_archivo) {
         } else if (strcmp(clave, "left") == 0) {
             left_sea.capacity = 0;
             waitline_init(false, valor);
-            calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,emptyboat);//Aca busco el barco mas lento actual
+            Canal.TiempoReal=calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,emptyboat);
         } else if (strcmp(clave, "right") == 0) {
             right_sea.capacity = 0;
             waitline_init(true, valor);
-            calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,emptyboat);//Aca busco el barco mas lento
+            Canal.TiempoReal=calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,emptyboat);
         }else if (strcmp(clave, "queuelength") == 0) {
             right_sea.maxcapacity=atoi(valor);
             left_sea.maxcapacity=atoi(valor);
@@ -115,10 +116,11 @@ void addboatdummy(bool right, int type) {
                   Canal.managed_boats++,
                   -1,
                   Canal.boatspeeds[type - 1],
-                  (1/Canal.boatspeeds[type - 1]) * Canal.size,
-                  (1/Canal.boatspeeds[type - 1]) * Canal.size,
+                  (1.0/Canal.boatspeeds[type - 1]) * Canal.size,
+                  (1.0/Canal.boatspeeds[type - 1]) * Canal.size,
                   type,
                   (Canal.thread_scheduling==4)?(false):(true)};
+  
   if (right) {
     if (right_sea.capacity == right_sea.maxcapacity) {
       printf("No se puede agregar en right\n");
@@ -162,9 +164,15 @@ void *boatmover(void *arg) {
       break;
     } else if (Canal.canal[position + 1].ID != -1 &&
                Canal.direction) {  // Hay un barco ocupando el lugar
+      if(Canal.thread_scheduling==5){//Si se esta en tiempo real no cumple con el deadline
+        Canal.TiempoReal=false;
+      }
       continue;
     } else if (Canal.canal[position - 1].ID != -1 &&
                (!Canal.direction)) {  // Hay un barco ocupando el lugar
+      if (Canal.thread_scheduling==5){//Si se esta en tiempo real no cumple con el deadline
+        Canal.TiempoReal=false;
+      }     
       continue;
     } else {  // el barco se mueve
       boat2move=Canal.canal[position];
@@ -203,8 +211,8 @@ void canalcontent() {
     fprintf(archivo, "%d ", boatprinter.typeboat);
   }
   fprintf(archivo, "\nDirection: %s", (Canal.direction) ? ("Right") : ("Left"));
-  fprintf(archivo, "\nYellow Light: %s",
-          (Canal.Yellowlight) ? ("true") : ("false"));
+  fprintf(archivo, "\nTiempoReal: %s", (Canal.TiempoReal) ? ("true") : ("false"));
+  fprintf(archivo, "\nYellow Light: %s", (Canal.Yellowlight) ? ("true") : ("false"));
   fprintf(archivo, "\nLeft:[");
   for (int i = 0; i < left_sea.capacity; i++) {
     boat boatprinter = left_sea.waiting[i];
@@ -267,11 +275,15 @@ void BoatGUI() {
     } else if (strcmp(respuesta, "p") == 0) {
       boattype = 3;  // Cambiar a barco patrulla
     } else if (strcmp(respuesta, "r") == 0) {
+      cemutex_lock(&canal_mutex);
       addboatdummy(true, boattype);  // Agregar barco a la derecha
-      calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,emptyboat);
+      Canal.TiempoReal=calendar(Canal.thread_scheduling,right_sea.waiting,right_sea.capacity,GetSlowestBoat());
+      cemutex_unlock(&canal_mutex);
     } else if (strcmp(respuesta, "l") == 0) {
+      cemutex_lock(&canal_mutex);
       addboatdummy(false, boattype);  // Agregar barco a la izquierda
-      calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,emptyboat);
+      Canal.TiempoReal=calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,GetSlowestBoat());
+      cemutex_unlock(&canal_mutex);
     }
   }
 
@@ -310,6 +322,7 @@ void *Canal_Schedule(void *arg){
         w = 0;
         Canal.direction = !Canal.direction;
       } else {  // No se han cumplido los tiempos
+        CheckRealTime();
         w += EnterCanal(0, !Canal.direction);
       }
     } else if (Canal.canal_scheduling == 2) {  // Time
@@ -319,6 +332,7 @@ void *Canal_Schedule(void *arg){
         Canal.direction = !Canal.direction;
         start_time = time(NULL);
       } else {
+        CheckRealTime();
         EnterCanal(0, !Canal.direction);
       }
     } else if (Canal.canal_scheduling == 3) {  // Modo tico
@@ -327,6 +341,7 @@ void *Canal_Schedule(void *arg){
           YellowCanal();
           Canal.direction = !Canal.direction;
         } else {
+          CheckRealTime();
           EnterCanal(0, !Canal.direction);
         }
       } else {
@@ -334,6 +349,7 @@ void *Canal_Schedule(void *arg){
           YellowCanal();
           Canal.direction = !Canal.direction;
         } else {
+          CheckRealTime();
           EnterCanal(0, !Canal.direction);
         }
       }
@@ -361,6 +377,7 @@ void YellowCanal() {
         calendar(Canal.thread_scheduling,left_sea.waiting,left_sea.capacity,emptyboat);
       }
     }
+    CheckRealTime();
     
     usleep(1000);
   }
@@ -375,9 +392,9 @@ int EnterCanal(int Waitpos, bool queue) {
   } else if (Canal.direction && left_sea.capacity == 0) {
     return 0;
   } else {
+    cemutex_lock(&canal_mutex);
     boat newboat = GetEnterBoat(Waitpos, queue);
     newboat.position = newposition;
-    cemutex_lock(&canal_mutex);
     Canal.canal[newboat.position] = newboat;
     Canal.boats_in++;
     canalcontent();
@@ -415,34 +432,22 @@ boat GetEnterBoat(int index, bool queue) {
   }
 }
 
-void WaitRealTime(boat Emergencyboat) {
-  double BiggestTimeRemaining = 0;
-  double TimeNeeded = (1.0 / Emergencyboat.speed) * Canal.size;
-  double Timeiter;
-  boat Boatiter;
+boat GetSlowestBoat() {
+  boat Boatiter,SlowestBoat;
+  SlowestBoat=emptyboat;
 
   for (int i = 0; i < Canal.size; i++) {
-    if (i == Canal.size - 1) {  // Reviso si ya busque en todo el canal
-      if (BiggestTimeRemaining <= TimeNeeded) {  // Cumple con el deadline
-        break;
-      }
-      BiggestTimeRemaining = 0;
-      i = 0;
-    }
-
     Boatiter = Canal.canal[i];
-
     if (Boatiter.ID == -1) {  // No tomo en cuanta los espacios vacios
       continue;
     }
-
-    // Calculo de tiempo
-    double Remaining = (Canal.direction) ? (Canal.size - Boatiter.position)
-                                         : (Boatiter.position + 1);
-    Timeiter = ((1.0 / Boatiter.speed) * (Remaining + 1));
-    BiggestTimeRemaining =
-        (BiggestTimeRemaining < Timeiter) ? (Timeiter) : (BiggestTimeRemaining);
+    if(SlowestBoat.tiempo_restante<Boatiter.tiempo_restante){
+      SlowestBoat=Boatiter;
+    }
   }
+  printf("Slowboat: %f\n",SlowestBoat.tiempo_restante);
+  
+  return SlowestBoat;
 }
 
 void Canal_RR(){
@@ -476,4 +481,23 @@ void Canal_RR(){
   Canal.RRID=Canal.canal[firstboat].ID;
   printf("Quantum granted to %d in position %d\n",Canal.RRID,firstboat);
   cemutex_unlock(&canal_mutex);
+}
+
+void CheckRealTime(){
+  if(Canal.thread_scheduling==5){//Para tiempo real hay que verificar que no tenga barcos esperando por direccion
+    if(Canal.Yellowlight){
+      if(right_sea.capacity!=0||left_sea.capacity!=0){
+        Canal.TiempoReal=false;
+      }
+    }
+    if(Canal.direction){//->
+      if(right_sea.capacity!=0){//No cumple, ay barcos esperando por cambio de direccion
+        Canal.TiempoReal=false;
+      }
+    }else{//<-
+      if(left_sea.capacity!=0){//No cumple, ay barcos esperando por cambio de direccion
+        Canal.TiempoReal=false;
+      }
+    }
+  }
 }

@@ -26,6 +26,6 @@ typedef struct {
 
 } boat;
 
-void *calendar(int option, boat *procesos, int num_procesos,boat slowestboat);
+bool calendar(int option, boat *procesos, int num_procesos,boat slowestboat);
 
 #endif  // CALENDAR_H

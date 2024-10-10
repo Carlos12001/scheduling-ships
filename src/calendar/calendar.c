@@ -1,7 +1,6 @@
 #include "calendar.h"
 
 #define NUM_THREADS 3
-#define QUANTUM_mSEC 1000      // Duración del quantum en segundos
 #define SLEEP_USEC 100000  // Tiempo de espera en microsegundos (0.1 segundos)
 
 cemutex mutex;
@@ -149,7 +148,17 @@ void adjustPatrol(boat * procesos,int num_procesos){
   }
 }
 
-void *calendar(int option, boat *procesos, int num_procesos,boat slowestboat) {
+bool RealTime(boat * procesos, int num_procesos, boat slowestboat){
+  if(1<num_procesos){//La cantidad de barcos significa que al menos uno esperara 
+    return false;
+  }if(procesos[0].tiempo_total<=slowestboat.tiempo_restante&&slowestboat.ID!=-1){//No le da tiempo de cruzar y cumplir el quantum
+    printf("Tiempo real incumplido por barco en canal (%f,%f)\n",procesos[0].tiempo_total,slowestboat.tiempo_restante);
+    return false;
+  }
+  return true;
+}
+
+bool calendar(int option, boat *procesos, int num_procesos,boat slowestboat) {
   switch (option) {
     case 1: {
       break;
@@ -169,12 +178,12 @@ void *calendar(int option, boat *procesos, int num_procesos,boat slowestboat) {
       break;
     }
     case 5: {
-
-      break;
+      bool response = (RealTime(procesos,num_procesos,slowestboat));
+      return response;
     }
     default:
       break;
   }
   adjustPatrol(procesos,num_procesos);
-  return NULL;
+  return true;
 }
