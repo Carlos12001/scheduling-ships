@@ -112,7 +112,7 @@ connect_to_server()
 try:
     while True:
         receive_data()
-        if canal != [] and direction != "" and yellow_light != None and emergency != None and wait_left_boats != [] and wait_right_boats != []:
+        if canal != [] and direction != "":
             print(canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats)
         # Pause for 100 ms to avoid CPU overuse
         time.sleep(0.1)
