@@ -101,7 +101,6 @@ def cerrar_socket():
 
 def on_closing():
     cerrar_socket()
-    root.destroy()
 
 
 ###### pegue aqui todo #######
