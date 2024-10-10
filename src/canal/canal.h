@@ -20,13 +20,16 @@ typedef struct {
 } waitline;
 
 typedef struct {
+
   int managed_boats;  // De momento uso los ids de aqui
   int boats_in;
   int size;
+  boat *canal;
+
   int W;
   int time;
-  boat *canal;
   int boatspeeds[3];
+
   int canal_scheduling; // 1 igual
                         // 2 semaforo
                         // 3 tico
@@ -39,17 +42,11 @@ typedef struct {
                         
   bool direction;  // True derecha, false izquierda
   bool running;
+
   bool Yellowlight;  // Esta variable es sobre todo para interfaz, una especie
                      // de alerta de luz amarilla
-
-  bool LeftEmergency;
-  bool RightEmergency;
-  bool Emergencyswitch;
-  int EmergencyAmount;
-
-  int RRiter;
-
-  
+  int RRiter;  
+  int RRID;
 
 } canal;
 
@@ -80,17 +77,12 @@ void *Canal_Schedule(void *arg);
 void BoatGUI();
 
 void YellowCanal();
-void EmergencyYellowCanal();
-
-void EmergencyYellowCanal();
 
 int EnterCanal(int Waitpos, bool queue);
 
 boat GetEnterBoat(int index, bool queue);
 
-void *SoundEmergency(void *arg);
-
-void EmergencyProtocol(bool side, int index);
-
 void WaitRealTime(boat Emergencyboat);
+
+void Canal_RR();
 #endif  // CANAL_H;
