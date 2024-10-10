@@ -135,7 +135,21 @@ int round_robin(boat *procesos, int num_procesos, size_t size_struct) {
   return 0;  // Indicate successful operation
 }
 
-void *calendar(int option, boat *procesos, int num_procesos,int ms,boat slowestboat) {
+void adjustPatrol(boat * procesos,int num_procesos){
+  int i =0;
+  for(int j=0;j<num_procesos;j++){
+    if(procesos[j].typeboat==3){//El barco es una patrulla
+      boat tempboat=procesos[j];
+      for(int k=j;i<k;k--){//Corrimiento de la lista
+        procesos[k]=procesos[k-1];
+      }
+      procesos[i]=tempboat;//Colocacion de la patrulla en el top
+      i++;
+    }
+  }
+}
+
+void *calendar(int option, boat *procesos, int num_procesos,boat slowestboat) {
   switch (option) {
     case 1: {
       break;
@@ -151,22 +165,16 @@ void *calendar(int option, boat *procesos, int num_procesos,int ms,boat slowestb
       break;
     }
     case 4: {
-      if (QUANTUM_mSEC<ms){
-        round_robin(procesos, num_procesos, sizeof(boat));
-      }
-
+      round_robin(procesos, num_procesos, sizeof(boat));
       break;
     }
     case 5: {
-      // TODO: ordenar a tiempo real si velocidad -1 entonces
-      // ordenar SJF
-      // SINO ordenar primero los de igual velocidad
-      // luego los los mas lentos y por ultimo los mas rapidos
+
       break;
     }
     default:
       break;
   }
-
+  adjustPatrol(procesos,num_procesos);
   return NULL;
 }

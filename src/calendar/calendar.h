@@ -5,8 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "../lib/cethread.h"
+
+#define QUANTUM_mSEC 3000
 
 typedef struct {
   cethread_t thread;
@@ -19,9 +22,10 @@ typedef struct {
   int typeboat;  // type: 1 Normal
                  //       2 Fishing
                  //       3 Patrol
+  bool Permission;
 
 } boat;
 
-void *calendar(int option, boat *procesos, int num_procesos,int ms,boat slowestboat);
+void *calendar(int option, boat *procesos, int num_procesos,boat slowestboat);
 
 #endif  // CALENDAR_H
