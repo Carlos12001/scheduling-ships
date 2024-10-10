@@ -1,4 +1,3 @@
-
 import socket
 import time
 
@@ -19,103 +18,105 @@ yellow_light = False
 emergency = False
 real_time = False
 
-def procesar_mensaje(mensaje):
+def process_message(message):
     global canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats
 
-    lineas = mensaje.split('\n')
-    for linea in lineas:
-        if linea.startswith('Canal:'):
-            canal = [int(x) if x != '-1' else -1 for x in linea.split(':')[1].strip().split()]
-        elif linea.startswith('Direction:'):
-            direction = linea.split(':')[1].strip()
-        elif linea.startswith('Yellow Light:'):
-            yellow_light = linea.split(':')[1].strip().lower() == 'true'
-        elif linea.startswith('Emergency:'):
-            emergency = linea.split(':')[1].strip().lower() == 'true'
-        elif linea.startswith('Left:'):
-            wait_left_boats = [int(x) for x in linea.split(':')[1].strip().strip('[]').split()]
-        elif linea.startswith('Right:'):
-            wait_right_boats = [int(x) for x in linea.split(':')[1].strip().strip('[]').split()]
+    lines = message.split('\n')
+    for line in lines:
+        if line.startswith('Canal:'):
+            canal = [int(x) if x != '-1' else -1 for x in line.split(':')[1].strip().split()]
+        elif line.startswith('Direction:'):
+            direction = line.split(':')[1].strip()
+        elif line.startswith('Yellow Light:'):
+            yellow_light = line.split(':')[1].strip().lower() == 'true'
+        elif line.startswith('Emergency:'):
+            emergency = line.split(':')[1].strip().lower() == 'true'
+        elif line.startswith('Left:'):
+            wait_left_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
+        elif line.startswith('Right:'):
+            wait_right_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
 
-def conectar_al_servidor():
+def connect_to_server():
     global client_socket
     if client_socket is not None:
-        return  # Ya está conectado o en proceso de conexión
+        return  
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.setblocking(False)  # Establecer el socket en modo no bloqueante
+    client_socket.setblocking(False) 
     try:
         client_socket.connect(('127.0.0.1', 5000))
     except BlockingIOError:
-        pass  # La conexión está en progreso o ya establecida
+        pass 
     except Exception as e:
-        print(f"Error al conectar al servidor: {e}")
-        cerrar_socket()
+        print("Error connecting to server:", e)
+        close_socket()
 
-def recibir_datos():
+def receive_data():
     global client_socket
     if client_socket:
         try:
             data = client_socket.recv(4096)
             if data:
                 s = data.decode()
-                # Buscar la primera aparición de 'END_OF_MESSAGE'
-                indice = s.find('END_OF_MESSAGE')
 
-                # Si se encuentra 'END_OF_MESSAGE', cortar el string hasta ese punto
-                if indice != -1:
-                    # Incluir 'END_OF_MESSAGE' en el resultado
-                    s = s[:indice + len('END_OF_MESSAGE')]
-                    procesar_mensaje(s)
+                index = s.find('END_OF_MESSAGE')
+
+                if index != -1:
+                    s = s[:index + len('END_OF_MESSAGE')]
+                    process_message(s)
                 else:
-                    print("No se encontró 'END_OF_MESSAGE'")
+                    print("Did not find 'END_OF_MESSAGE'")
             else:
-                # No hay datos, lo que puede indicar que el servidor cerró la conexión
-                print("Conexión cerrada por el servidor")
+                print("Connection closed by the server")
         except BlockingIOError:
-            pass  # No hay datos disponibles todavía
-        except ConnectionResetError:
-            print("Conexión cerrada por el servidor")
-            client_socket = None
+            pass
+        except ConnectionResetError as e:
+            print("Connection closed by the server")
+            print(e)
+            close_socket()
         except Exception as e:
-            print(f"Error: {e}")
-            client_socket = None
+            print("Error:")
+            print(e)
+            close_socket()
 
     else:
-        print("No hay cliente conectado")
-        conectar_al_servidor()
+        print("No client connected")
+        connect_to_server()
 
-def cerrar_socket():
+def close_socket():
     global client_socket
     if client_socket:
         try:
             client_socket.shutdown(socket.SHUT_RDWR)
         except Exception as e:
-            print(f"Error al hacer shutdown del socket: {e}")
+            print("Error shutting down the socket:")
+            print(e)
         try:
             client_socket.close()
-            print("Socket cerrado correctamente.")
+            print("Socket closed successfully.")
         except Exception as e:
-            print(f"Error al cerrar el socket: {e}")
+            print("Error closing the socket:")
+            print(e)
+        client_socket = None
+    else:
         client_socket = None
 
 def on_closing():
-    cerrar_socket()
+    close_socket()
 
-
-###### pegue aqui todo #######
-
-# Conectar al servidor
+# Connect to the server
 client_socket = None
-conectar_al_servidor()
+connect_to_server()
 
-# Bucle principal para recibir datos
+# Main loop to receive data
 try:
     while True:
-        recibir_datos()
-        print(canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats)
-        ### HARDWARE ###
-        time.sleep(0.1)  # Pausa de 100 ms para no saturar la CPU
-except KeyboardInterrupt:
-    print("Cerrando cliente...")
-    cerrar_socket()
+        receive_data()
+        if canal != [] and direction != "" and yellow_light != None and emergency != None and wait_left_boats != [] and wait_right_boats != []:
+            print(canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats)
+        # Pause for 100 ms to avoid CPU overuse
+        time.sleep(0.1)
+except KeyboardInterrupt as e:
+    print("Shutting down client...")
+    print(e)
+    close_socket()
