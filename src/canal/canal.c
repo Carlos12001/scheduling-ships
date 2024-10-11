@@ -9,6 +9,7 @@
 
 int server_fd = -1;
 int client_fd = -1;
+int client_fd2 = -1;
 static cemutex socket_mutex;
 static size_t message_id = 0;
 
@@ -86,9 +87,21 @@ void *accept_connections(void *arg) {
 
     printf("Client connected with fd %d\n", new_client_fd);
 
-    // protect the access to client_fd with the mutex
+    // protect access to client_fd and client_fd2 with the mutex
     cemutex_lock(&socket_mutex);
-    client_fd = new_client_fd;
+
+    if (client_fd == -1) {
+      client_fd = new_client_fd;
+      printf("Assigned to client_fd\n");
+    } else if (client_fd2 == -1) {
+      client_fd2 = new_client_fd;
+      printf("Assigned to client_fd2\n");
+    } else {
+      // The server only accepts 2 clients at a time
+      printf("Server is full. Closing new connection fd %d\n", new_client_fd);
+      close(new_client_fd);
+    }
+
     cemutex_unlock(&socket_mutex);
   }
   return NULL;
@@ -131,8 +144,6 @@ int send_data() {
   offset +=
       snprintf(buffer + offset, sizeof(buffer) - offset, "\nTiempoReal: %s",
                (Canal.TiempoReal) ? ("true") : ("false"));
-  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nSizeWait: %d",
-                     (left_sea.maxcapacity));
   offset +=
       snprintf(buffer + offset, sizeof(buffer) - offset, "\nYellow Light: %s",
                (Canal.Yellowlight) ? ("true") : ("false"));
@@ -167,19 +178,39 @@ int send_data() {
     if (n < 0) {
       if (errno == EPIPE || errno == ECONNRESET || errno == EAGAIN ||
           errno == EWOULDBLOCK) {
-        perror("Error sending message to GUI/HW");
+        perror("Error sending message to client_fd");
         // Close the socket and clean up
         close(client_fd);
         client_fd = -1;
         message_id--;
-        cemutex_unlock(&socket_mutex);
-        return -1;
       } else {
-        perror("Unexpected error in send()");
-        // Handle other errors accordingly
+        perror("Unexpected error in send() to client_fd");
       }
     }
   }
+
+  if (client_fd2 > 0) {
+    // Set socket to non-blocking mode
+    int flags = fcntl(client_fd2, F_GETFL, 0);
+    fcntl(client_fd2, F_SETFL, flags | O_NONBLOCK);
+
+    message_id++;
+    n = send(client_fd2, buffer, strlen(buffer), 0);
+
+    if (n < 0) {
+      if (errno == EPIPE || errno == ECONNRESET || errno == EAGAIN ||
+          errno == EWOULDBLOCK) {
+        perror("Error sending message to client_fd2");
+        // Close the socket and clean up
+        close(client_fd2);
+        client_fd2 = -1;
+        message_id--;
+      } else {
+        perror("Unexpected error in send() to client_fd2");
+      }
+    }
+  }
+
   cemutex_unlock(&socket_mutex);
   return 0;
 }
@@ -451,7 +482,7 @@ void BoatGUI() {
       addboatdummy(true, boattype);  // Agregar barco a la derecha
       Canal.TiempoReal = calendar(Canal.thread_scheduling, right_sea.waiting,
                                   right_sea.capacity, GetSlowestBoat());
-      if(Canal.thread_scheduling){
+      if (Canal.thread_scheduling) {
         CheckRealTime();
       }
       canalcontent();
@@ -462,7 +493,7 @@ void BoatGUI() {
       addboatdummy(false, boattype);  // Agregar barco a la izquierda
       Canal.TiempoReal = calendar(Canal.thread_scheduling, left_sea.waiting,
                                   left_sea.capacity, GetSlowestBoat());
-      if(Canal.thread_scheduling){
+      if (Canal.thread_scheduling) {
         CheckRealTime();
       }
       canalcontent();
@@ -548,7 +579,7 @@ void *Canal_Schedule(void *arg) {
 
 void YellowCanal() {
   Canal.Yellowlight = true;
-  while (Canal.Yellowlight&&Canal.running) {
+  while (Canal.Yellowlight && Canal.running) {
     if (Canal.boats_in == 0) {
       Canal.Yellowlight = false;
     }
@@ -581,13 +612,13 @@ int EnterCanal(int Waitpos, bool queue) {
     cemutex_lock(&canal_mutex);
     boat newboat = GetEnterBoat(Waitpos, queue);
     newboat.position = newposition;
-    if(Canal.boats_in==0){
-      Canal.RRID=newboat.ID;
-      newboat.Permission=true;
+    if (Canal.boats_in == 0) {
+      Canal.RRID = newboat.ID;
+      newboat.Permission = true;
     }
     Canal.canal[newboat.position] = newboat;
     Canal.boats_in++;
-    
+
     canalcontent();
     cemutex_unlock(&canal_mutex);
     if (cethread_create(&Canal.canal[newboat.position].thread,
