@@ -6,11 +6,10 @@ from PIL import Image, ImageTk
 # --- Socket Code ---
 
 # Configure logging level to only show critical errors
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.WARNING)
 
 # Global variables for socket communication
 client_socket = None
-data_received = False
 
 # Global variables for canal data
 canal = []
@@ -48,14 +47,13 @@ def receive_data():
                 if index != -1:
                     s = s[:index + len('END_OF_MESSAGE')]
                     process_message(s)
-                    data_received = True  # Data has been received
                 else:
                     logging.warning("Did not find 'END_OF_MESSAGE'")
             else:
                 logging.info("Connection closed by the server")
                 close_socket()
-        except BlockingIOError:
-            pass
+        except BlockingIOError as e:
+            logging.error("Unexpected error: %s", e)
         except ConnectionResetError as e:
             logging.warning("Connection closed by the server: %s", e)
             close_socket()
@@ -66,7 +64,7 @@ def receive_data():
     else:
         logging.info("No client connected, attempting to reconnect...")
         connect_to_server()
-    
+    update_canvas()  # Update the GUI with new data
     # Retry to receive data every 100 ms
     root.after(100, receive_data)
 
@@ -101,8 +99,10 @@ def process_message(message):
             wait_left_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
         elif line.startswith('Right:'):
             wait_right_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
+        elif line.startswith('Real Time:'):
+            real_time = line.split(':')[1].strip().lower() == 'true'
 
-    update_canvas()  # Update the GUI with new data
+    
 
 def on_closing():
     close_socket()
@@ -123,14 +123,18 @@ boat_images = {
 
 # Background images
 sea_image = Image.open(file_directory + "images/sea.png")
-asphalt_image = Image.new('RGB', (100, 100), color='gray')  # Placeholder for asphalt
+asphalt_image = Image.new('RGB', (100, 100), color='gray')  # Placeholder for gray tile
+
+
+
 
 # Resize images as needed
 def resize_images(new_width, new_height):
-    global boat_images, asphalt_image
+    global boat_images, asphalt_image, sea_image
     for key in boat_images:
         boat_images[key] = boat_images[key].resize((new_width, new_height), Image.ANTIALIAS)
     asphalt_image = asphalt_image.resize((new_width, new_height), Image.ANTIALIAS)
+    sea_image = sea_image.resize((new_width, new_height), Image.ANTIALIAS)
 
 # Update the canvas based on the current data
 def update_canvas():
@@ -138,61 +142,79 @@ def update_canvas():
     canvas_width = canvas.winfo_width()
     canvas_height = canvas.winfo_height()
 
-    if not data_received:
-        canvas.create_text(canvas_width // 2, canvas_height // 2, text="Waiting for information...", font=("Arial", 24))
+    if len(canal) == 0:
+        canvas.create_text(canvas_width // 2, canvas_height // 2, text="Waiting for information...", font=("Arial", 24*(canvas_width*canvas_height)//(window_width*window_height)))
         return
 
     # Determine the size of each tile
     canal_length = len(canal)
-    tile_width = canvas_width // (canal_length + 2)  # +2 for the sides
-    tile_height = canvas_height // 5  # Adjust as needed
+    num_columns = canal_length + 4  # +4 for the 'mar' columns on each side
+    num_rows = 3  # As per your layout
+
+    tile_width = canvas_width // num_columns
+    tile_height = canvas_height // num_rows
 
     resize_images(tile_width, tile_height)
 
     # Convert PIL images to ImageTk
     tk_boat_images = {key: ImageTk.PhotoImage(img) for key, img in boat_images.items()}
-    # Resize sea_image to canvas size
-    sea_resized = sea_image.resize((canvas_width, canvas_height), Image.ANTIALIAS)
-    tk_sea_image = ImageTk.PhotoImage(sea_resized)
+    tk_sea_image = ImageTk.PhotoImage(sea_image)
     tk_asphalt_image = ImageTk.PhotoImage(asphalt_image)
 
-    # Draw the sea background covering the entire canvas
-    canvas.create_image(0, 0, anchor='nw', image=tk_sea_image)
-
-    # Draw gray rectangle where boats don't pass
-    rect_height = 100  # Adjust as needed
-    rect_y1 = (canvas_height - rect_height) // 2
-    rect_y2 = rect_y1 + rect_height
-    canvas.create_rectangle(0, rect_y1, canvas_width, rect_y2, fill='gray')
-
-    # Draw the waiting boats on the left
-    for idx, boat_type in enumerate(wait_left_boats):
-        if boat_type in tk_boat_images:
-            y = rect_y2 + (idx * tile_height)  # Position boats below the gray rectangle
-            canvas.create_image(0, y, anchor='nw', image=tk_boat_images[boat_type])
-
-    # Draw the waiting boats on the right
-    for idx, boat_type in enumerate(wait_right_boats):
-        if boat_type in tk_boat_images:
-            y = rect_y1 - ((idx + 1) * tile_height)  # Position boats above the gray rectangle
-            x = canvas_width - tile_width
-            canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
-
-    # Draw the canal and boats
-    for idx, boat_type in enumerate(canal):
-        x = (idx + 1) * tile_width  # Offset by 1 to account for sides
-        y = canvas_height // 2 - tile_height // 2  # Center vertically
-        if boat_type == -1:
-            # Sea background already drawn; nothing to do
-            pass
-        elif boat_type in tk_boat_images:
-            # Draw boat
-            canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
-
-    # Keep a reference to the images to prevent garbage collection
+    # Keep track of images to prevent garbage collection
     canvas.tk_boat_images = tk_boat_images
     canvas.tk_sea_image = tk_sea_image
     canvas.tk_asphalt_image = tk_asphalt_image
+
+    # Draw the grid
+    for row in range(num_rows):
+        for col in range(num_columns):
+            x = col * tile_width
+            y = row * tile_height
+            # Determine what to draw in this cell
+            if row == 0 or row == 2:
+                # Top or bottom row
+                if col < 2 or col >= canal_length + 2:
+                    # 'mar' cells (sea)
+                    canvas.create_image(x, y, anchor='nw', image=tk_sea_image)
+                else:
+                    # 'rel' cells (gray)
+                    canvas.create_image(x, y, anchor='nw', image=tk_asphalt_image)
+            elif row == 1:
+                # Middle row
+                if col < 2 or col >= canal_length + 2:
+                    # 'mar' cells (sea)
+                    canvas.create_image(x, y, anchor='nw', image=tk_sea_image)
+                else:
+                    # 'cnl' cells (canal - sea)
+                    canvas.create_image(x, y, anchor='nw', image=tk_sea_image)
+                    # Draw boat if present
+                    boat_idx = col - 2  # Adjust index for canal list
+                    boat_type = canal[boat_idx]
+                    if boat_type != -1 and boat_type in tk_boat_images:
+                        canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+
+    # Draw waiting boats on the left 'mar' columns
+    left_mar_columns = [0, 1]
+    for idx, boat_type in enumerate(wait_left_boats):
+        if boat_type in tk_boat_images:
+            col = left_mar_columns[idx % len(left_mar_columns)]
+            row = idx // len(left_mar_columns)  # Stack boats vertically if more than two
+            x = col * tile_width
+            y = row * tile_height
+            canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+
+    # Draw waiting boats on the right 'mar' columns
+    right_mar_columns = [num_columns - 2, num_columns - 1]
+    for idx, boat_type in enumerate(wait_right_boats):
+        if boat_type in tk_boat_images:
+            col = right_mar_columns[idx % len(right_mar_columns)]
+            row = idx // len(right_mar_columns)  # Stack boats vertically if more than two
+            x = col * tile_width
+            y = row * tile_height
+            canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+
+
 
 # Configure the GUI
 root = tk.Tk()
@@ -206,6 +228,7 @@ root.geometry(f"{window_width}x{window_height}")
 # Create canvas
 canvas = tk.Canvas(root, width=window_width, height=window_height)
 canvas.pack(fill="both", expand=True)
+canvas.create_text(window_width // 2, window_height // 2, text="Waiting for information...", font=("Arial", 24))
 
 # Properly close the window and the socket
 root.protocol("WM_DELETE_WINDOW", on_closing)
