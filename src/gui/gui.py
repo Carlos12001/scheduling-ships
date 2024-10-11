@@ -96,7 +96,7 @@ def process_message(message):
             wait_left_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
         elif line.startswith('Right:'):
             wait_right_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
-        elif line.startswith('Real Time:'):
+        elif line.startswith('TiempoReal:'):
             real_time = line.split(':')[1].strip().lower() == 'true'
 
     
@@ -108,22 +108,10 @@ def on_closing():
 
 # --- GUI Code ---
 
-global file_directory, boat_images, sea_image, asphalt_image
+global file_directory
+global boat_images, sea_image, asphalt_image
+global direction_image, yellow_light_image_false, yellow_light_image_true, real_time_image_false, real_time_image_true
 global MAX_VISIBLE_BOATS, left_start_index, right_start_index
-
-# Load images
-file_directory = ""  # Set your file directory here
-
-# Boat images
-boat_images = {
-    1: Image.open(file_directory + "images/normal.png"),
-    2: Image.open(file_directory + "images/fish.png"),
-    3: Image.open(file_directory + "images/police.png")
-}
-
-# Background images
-sea_image = Image.open(file_directory + "images/sea.png")
-asphalt_image = Image.new('RGB', (100, 100), color='gray')  # Placeholder for gray tile
 
 # Constants
 MAX_VISIBLE_BOATS = 6
@@ -132,25 +120,66 @@ MAX_VISIBLE_BOATS = 6
 left_start_index = 0
 right_start_index = 0
 
+# Load images
+file_directory = ""  # Set your file directory here
+
+def import_images():
+    global boat_images, asphalt_image, sea_image, direction_image, yellow_light_image_false, yellow_light_image_true, real_time_image_false, real_time_image_true
+    # Boat images
+    boat_images = {
+        1: Image.open(file_directory + "images/normal.png"),
+        2: Image.open(file_directory + "images/fish.png"),
+        3: Image.open(file_directory + "images/police.png")
+    }
+
+    # Background images
+    sea_image = Image.open(file_directory + "images/sea.png")
+    asphalt_image = Image.new('RGB', (100, 100), color='gray')  # Placeholder for gray tile
+
+    ## Flags images
+    direction_image = {
+        "Left": Image.open(file_directory + "images/left.png"),
+        "Right": Image.open(file_directory + "images/right.png")
+    } 
+
+    yellow_light_image_false = Image.open(file_directory + "images/turn_off.png")
+    yellow_light_image_true = Image.open(file_directory + "images/turn_on.png")
+
+    real_time_image_false = Image.open(file_directory + "images/x.png")
+    real_time_image_true = Image.open(file_directory + "images/check.png")
+
+
+
 # Resize images as needed
 def resize_images(new_width, new_height):
-    global boat_images, asphalt_image, sea_image
+    global boat_images, asphalt_image, sea_image, direction_image, yellow_light_image_false, yellow_light_image_true, real_time_image_false, real_time_image_true
+    import_images()
+
     for key in boat_images:
         boat_images[key] = boat_images[key].resize((new_width, new_height), Image.ANTIALIAS)
     asphalt_image = asphalt_image.resize((new_width, new_height), Image.ANTIALIAS)
     sea_image = sea_image.resize((new_width, new_height), Image.ANTIALIAS)
+    for key in direction_image:
+        direction_image[key] = direction_image[key].resize((new_width, new_height//2), Image.ANTIALIAS)
+    yellow_light_image_false = yellow_light_image_false.resize((new_width, new_height//2), Image.ANTIALIAS)
+    yellow_light_image_true = yellow_light_image_true.resize((new_width, new_height//2), Image.ANTIALIAS)
+    real_time_image_false = real_time_image_false.resize((new_width, new_height//2), Image.ANTIALIAS)
+    real_time_image_true = real_time_image_true.resize((new_width, new_height//2), Image.ANTIALIAS)
 
 # Update the canvas based on the current data
 def update_canvas():
     global canal, direction, yellow_light, wait_left_boats, wait_right_boats, real_time
     global boat_images, asphalt_image, sea_image
+    global direction_image, yellow_light_image_false, yellow_light_image_true, real_time_image_false, real_time_image_true
     global MAX_VISIBLE_BOATS, left_start_index, right_start_index
     canvas.delete("all")  # Clear the canvas
     canvas_width = canvas.winfo_width()
     canvas_height = canvas.winfo_height()
 
+    multiplier_font = (canvas_width*canvas_height)//(window_width*window_height)
+
     if len(canal) == 0:
-        canvas.create_text(canvas_width // 2, canvas_height // 2, text="Waiting for information...", font=("Arial", 24*(canvas_width*canvas_height)//(window_width*window_height)))
+        canvas.create_text(canvas_width // 2, canvas_height // 2, text="Waiting for information...", font=("Arial", 24*multiplier_font))
         return
 
     # Determine the size of each tile
@@ -167,13 +196,19 @@ def update_canvas():
     tk_boat_images = {key: ImageTk.PhotoImage(img) for key, img in boat_images.items()}
     tk_sea_image = ImageTk.PhotoImage(sea_image)
     tk_asphalt_image = ImageTk.PhotoImage(asphalt_image)
+    tk_direction_image = ImageTk.PhotoImage(direction_image[direction])
+    tk_yellow_light_image = ImageTk.PhotoImage(yellow_light_image_true if yellow_light else yellow_light_image_false)
+    tk_real_time_image = ImageTk.PhotoImage(real_time_image_true if real_time else real_time_image_false)
 
     # Keep track of images to prevent garbage collection
     canvas.tk_boat_images = tk_boat_images
     canvas.tk_sea_image = tk_sea_image
     canvas.tk_asphalt_image = tk_asphalt_image
+    canvas.tk_direction_image = tk_direction_image
+    canvas.tk_yellow_light_image = tk_yellow_light_image
+    canvas.tk_real_time_image = tk_real_time_image
 
-    # Draw the grid
+    ####--------------------- DRAW CANAL ---------------------####
     for row in range(num_rows):
         for col in range(num_columns):
             x = col * tile_width
@@ -200,6 +235,27 @@ def update_canvas():
                     boat_type = canal[boat_idx]
                     if boat_type != -1 and boat_type in tk_boat_images:
                         canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+
+    ####--------------------- DRAW FLAGS ---------------------####
+    size_font = 6*multiplier_font
+    font_text = ("Arial", size_font, "bold")
+    x = 2 * tile_width
+    y = 0 * tile_height
+    canvas.create_image(x,y, anchor='nw', image=tk_direction_image)
+    canvas.create_text(x+tile_width//2, y+tile_height//2, text="Direccion", font=font_text)
+
+    x = 2*tile_width
+    y = (num_rows-1)*tile_height
+    canvas.create_image(x, y, anchor='nw', image=tk_yellow_light_image)
+    canvas.create_text(x+tile_width//2, y+tile_height//2, text="Puede Pasar", font=font_text)
+
+    x = (num_columns-1-2)*tile_width
+    y = (num_rows-1)*tile_height
+    canvas.create_image(x, y, anchor='nw', image=tk_real_time_image)
+    canvas.create_text(x+tile_width//2, y+tile_height//2, text="Tiempo Real", font=font_text)
+
+
+    ####--------------------- DRAW WAITING LEFT BOATS ---------------------####
 
     if len(wait_left_boats) <= MAX_VISIBLE_BOATS or left_start_index > len(wait_left_boats):
         left_start_index = 0
@@ -228,6 +284,9 @@ def update_canvas():
         left_down_button.place_configure(x=0, y=canvas_height - 32)
     else:
         left_down_button.pack_forget()
+
+
+    ####--------------------- DRAW WAITING RIGHT BOATS ---------------------####
 
 
     if len(wait_right_boats) <= MAX_VISIBLE_BOATS or right_start_index > len(wait_right_boats):
@@ -324,6 +383,9 @@ right_down_button = tk.Button(canvas, text='Down', command=right_scroll_down)
 
 # Properly close the window and the socket
 root.protocol("WM_DELETE_WINDOW", on_closing)
+
+## Import images
+import_images()
 
 # Attempt to connect to the server and continuously receive data
 connect_to_server()
