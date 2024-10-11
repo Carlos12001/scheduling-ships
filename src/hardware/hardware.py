@@ -1,3 +1,4 @@
+import Jetson.GPIO as GPIO
 import socket
 import time
 
@@ -106,15 +107,121 @@ def on_closing():
 client_socket = None
 connect_to_server()
 
-# Main loop to receive data
-try:
-    while True:
-        receive_data()
-        if canal != [] and direction != "":
-            print(canal, direction, yellow_light, real_time, wait_left_boats, wait_right_boats)
-        # Pause for 100 ms to avoid CPU overuse
-        time.sleep(0.1)
-except KeyboardInterrupt as e:
-    print("Shutting down client...")
-    print(e)
-    close_socket()
+'''Functionality to run hardware'''
+LED_DIRECCION = 40
+LED_YELLOW_LIGHT = 13
+LED_LEFT_BOAT_MS = 11
+LED_LEFT_BOAT_LS = 12
+LED_RIGHT_BOAT_MS = 37
+LED_RIGHT_BOAT_LS = 38
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(LED_DIRECCION, GPIO.OUT)
+GPIO.setup(LED_YELLOW_LIGHT, GPIO.OUT)
+GPIO.setup(LED_LEFT_BOAT_MS, GPIO.OUT)
+GPIO.setup(LED_LEFT_BOAT_LS, GPIO.OUT)
+GPIO.setup(LED_RIGHT_BOAT_MS, GPIO.OUT)
+GPIO.setup(LED_RIGHT_BOAT_LS, GPIO.OUT)
+
+my_channel_dict = {1: (15, 16, 18), 2: (19, 21, 22), 3: (23, 24, 26), 4: (29, 31, 32), 5: (33, 35, 36)}
+    # Cada numero indica la posicion de su respectivo LED en el canal
+    # Cada tupla indica los pines correspondientes para el control de cada LED
+
+my_boats_dict = {-1: (0,0,0), 1: (0,1,0), 2: (0,0,1), 3:(1,0,0)}
+# -1: Estado inicial (No hay ningun barco en el canal)
+# 1: Normales (Green / Verdes)
+# 2: Pesquero (Blue / Azul)
+# 3: Patrullas (Red / Rojos)
+
+# Configurar los pines del canal
+for pins in my_channel_dict.values():
+    GPIO.setup(pins[0], GPIO.OUT)
+    GPIO.setup(pins[1], GPIO.OUT)
+    GPIO.setup(pins[2], GPIO.OUT)
+
+def set_color(red, green, blue, r_pin, g_pin, b_pin):
+    GPIO.output(r_pin, red)
+    GPIO.output(g_pin, green)
+    GPIO.output(b_pin, blue)
+
+def show_leds(canal, direction, yellow_light, wait_left_boats, wait_right_boats):
+    try:
+        if (yellow_light):
+            GPIO.output(LED_YELLOW_LIGHT, GPIO.HIGH)
+        else:
+            GPIO.output(LED_YELLOW_LIGHT, GPIO.LOW)
+
+        if (direction == "Right"):
+            GPIO.output(LED_DIRECCION, GPIO.HIGH)  # Enciende el LED 10
+
+            if wait_left_boats:
+                left_boat = wait_left_boats[0]
+                ## Switch statement:
+                if (left_boat == 1):
+                    GPIO.output(LED_LEFT_BOAT_MS, GPIO.LOW)
+                    GPIO.output(LED_LEFT_BOAT_LS, GPIO.HIGH)
+                elif (left_boat == 2):
+                    GPIO.output(LED_LEFT_BOAT_MS, GPIO.HIGH)
+                    GPIO.output(LED_LEFT_BOAT_LS, GPIO.LOW)
+                elif (left_boat == 3):
+                    GPIO.output(LED_LEFT_BOAT_MS, GPIO.HIGH)
+                    GPIO.output(LED_LEFT_BOAT_LS, GPIO.HIGH)
+
+        else:
+            GPIO.output(LED_DIRECCION, GPIO.LOW)  # Enciende el LED 10
+
+            if wait_right_boats:
+                right_boat = wait_right_boats[0]
+                ## Switch statement:
+                if (right_boat == 1):
+                    GPIO.output(LED_RIGHT_BOAT_MS, GPIO.LOW)
+                    GPIO.output(LED_RIGHT_BOAT_LS, GPIO.HIGH)
+                elif (right_boat == 2):
+                    GPIO.output(LED_RIGHT_BOAT_MS, GPIO.HIGH)
+                    GPIO.output(LED_RIGHT_BOAT_LS, GPIO.LOW)
+                elif (right_boat == 3):
+                    GPIO.output(LED_RIGHT_BOAT_MS, GPIO.HIGH)
+                    GPIO.output(LED_RIGHT_BOAT_LS, GPIO.HIGH)
+
+
+
+        
+
+        #my_channel_dict = {1: (15, 16, 18), 2: (19, 21, 22), 3: (23, 24, 26), 4: (29, 31, 32), 5: (33, 35, 36)}
+
+        for i in range(len(canal)):
+            pines = my_channel_dict[i+1]
+            if canal[i] == -1:
+                set_color(0, 0, 0, pines[0], pines[1], pines[2])
+
+            if canal[i] == 1:
+                set_color(0, 1, 0, pines[0], pines[1], pines[2])
+
+            if canal[i] == 2:
+                set_color(0, 0, 1, pines[0], pines[1], pines[2])
+
+            if canal[i] == 3:
+                set_color(1, 0, 0, pines[0], pines[1], pines[2])
+
+        
+    except KeyboardInterrupt:
+        GPIO.cleanup()  # Limpia la configuracion GPIO
+    
+
+def main():
+    # Main loop to receive data
+    try:
+        while True:
+            receive_data()
+            
+            if canal != []:
+                #print(canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats)
+                show_leds(canal, direction, yellow_light, wait_left_boats, wait_right_boats)
+            # Pause for 100 ms to avoid CPU overuse
+            #time.sleep(0.1)
+    except KeyboardInterrupt as e:
+        print("Shutting down client...")
+        print(e)
+        close_socket()
+
+main()
