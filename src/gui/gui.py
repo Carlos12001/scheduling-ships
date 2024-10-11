@@ -1,168 +1,129 @@
-# import tkinter as tk
-# from tkinter import PhotoImage
-# from PIL import Image, ImageTk  # Usar PIL para redimensionar imágenes
-
-# # Función para mover las imágenes
-# def mover_imagen(imagen_label, velocidad, imagen, y_pos):
-#     coords = canvas.coords(imagen_label)
-    
-#     # Verifica si la imagen aún existe en el canvas
-#     if not coords:
-#         return  # Si no existe, no sigue con la función
-
-#     x_actual, y_actual = coords
-
-#     # Si el barco llega a la zona de espera 2 (derecha), desaparece y reaparece en la zona de espera 1
-#     if x_actual >= 1400:  # Al llegar a la zona de espera 2 (derecha)
-#         canvas.delete(imagen_label)  # Elimina el barco del canvas (desaparece)
-#         # Reaparece en la posición inicial (justo fuera de la zona de espera 1)
-#         nuevo_barco = canvas.create_image(200, y_pos, anchor=tk.NW, image=imagen)
-#         # Comienza a moverse de nuevo
-#         canvas.after(50, mover_imagen, nuevo_barco, velocidad, imagen, y_pos)
-#     else:
-#         canvas.move(imagen_label, velocidad, 0)  # Mueve hacia la derecha
-    
-#     # Repite el movimiento cada 50ms para mantener el ciclo
-#     canvas.after(50, mover_imagen, imagen_label, velocidad, imagen, y_pos)
-
-
-# import os
-# print('Get current working directory : ', os.getcwd())
-# image_src = os.getcwd()
-
-# # Crear la ventana principal
-# root = tk.Tk()
-# root.title("Botes sobre el canal")
-# root.geometry("1600x800")
-
-# # Crear un canvas para mostrar las imágenes
-# canvas = tk.Canvas(root, width=1600, height=800)
-# canvas.pack()
-
-# # Cargar la imagen de fondo (mar)
-# fondo_mar = Image.open( image_src+ "/images/mar_fondo.gif")  # Asegúrate de tener una imagen llamada 'mar_fondo.gif'
-# fondo_mar = fondo_mar.resize((1600, 800))  # Ajustar el tamaño al tamaño del canvas
-# fondo_mar_img = ImageTk.PhotoImage(fondo_mar)
-# canvas.create_image(0, 0, anchor=tk.NW, image=fondo_mar_img)  # Colocar la imagen del mar de fondo
-
-# # Dibujar el rectángulo (Zona de Espera 1) a la izquierda
-# canvas.create_rectangle(50, 100, 200, 600, outline='blue', width=3)
-# canvas.create_text(125, 80, text="Zona de Espera 1", font=("Arial", 16), fill="blue")
-
-# # Dibujar el rectángulo (Zona de Espera 2) a la derecha
-# canvas.create_rectangle(1400, 100, 1550, 600, outline='blue', width=3)
-# canvas.create_text(1475, 80, text="Zona de Espera 2", font=("Arial", 16), fill="blue")
-
-# # Cargar las imágenes de los botes y redimensionarlas al 40% menos
-# bote_img_original = Image.open(image_src+"/images/pesquero.gif")
-# bote_img_reducida = bote_img_original.resize((int(bote_img_original.width * 0.2), int(bote_img_original.height * 0.2)))
-# bote_img = ImageTk.PhotoImage(bote_img_reducida)
-
-# norma_img_original = Image.open(image_src+"/images/norma.gif")
-# norma_img_reducida = norma_img_original.resize((int(norma_img_original.width * 0.2), int(norma_img_original.height * 0.2)))
-# norma_img = ImageTk.PhotoImage(norma_img_reducida)
-
-# policia_img_original = Image.open(image_src+"/images/policia.gif")
-# policia_img_reducida = policia_img_original.resize((int(policia_img_original.width * 0.2), int(policia_img_original.height * 0.2)))
-# policia_img = ImageTk.PhotoImage(policia_img_reducida)
-
-# # Colocar las imágenes redimensionadas en el canvas justo después de la zona de espera 1 (coordenada 200 en X)
-# bote_label = canvas.create_image(200, 150, anchor=tk.NW, image=bote_img)  # Justo fuera de la Zona de Espera 1
-# norma_label = canvas.create_image(200, 250, anchor=tk.NW, image=norma_img)  # Justo fuera de la Zona de Espera 1
-# policia_label = canvas.create_image(200, 350, anchor=tk.NW, image=policia_img)  # Justo fuera de la Zona de Espera 1
-
-# # Mover las imágenes con diferentes velocidades desde la zona de espera 1 hacia la zona de espera 2
-# mover_imagen(bote_label, 5, bote_img, 150)   # Velocidad del bote
-# mover_imagen(norma_label, 3, norma_img, 250)  # Velocidad de la norma
-# mover_imagen(policia_label, 6, policia_img, 350) # Velocidad del policía
-
-# # Iniciar la ventana principal
-# root.mainloop()
-
-
-import tkinter as tk
 import socket
+import tkinter as tk
+import logging
+from PIL import Image, ImageTk
 
-def conectar_al_servidor():
+# Configure logging level to only show critical errors
+logging.basicConfig(level=logging.CRITICAL)
+
+# Global variables
+global client_socket
+global canal
+global wait_right_boats
+global wait_left_boats
+global direction
+global yellow_light
+global emergency
+global real_time
+client_socket = None
+canal = []
+wait_right_boats = []
+wait_left_boats = []
+direction = ""
+yellow_light = False
+emergency = False
+real_time = False
+
+def process_message(message):
+    global canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats
+
+    lines = message.split('\n')
+    for line in lines:
+        if line.startswith('Canal:'):
+            canal = [int(x) if x != '-1' else -1 for x in line.split(':')[1].strip().split()]
+        elif line.startswith('Direction:'):
+            direction = line.split(':')[1].strip()
+        elif line.startswith('Yellow Light:'):
+            yellow_light = line.split(':')[1].strip().lower() == 'true'
+        elif line.startswith('Emergency:'):
+            emergency = line.split(':')[1].strip().lower() == 'true'
+        elif line.startswith('Left:'):
+            wait_left_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
+        elif line.startswith('Right:'):
+            wait_right_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
+
+def connect_to_server():
     global client_socket
     if client_socket is not None:
-        return  # Ya está conectado o en proceso de conexión
+        return  
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.setblocking(False)  # Establecer el socket en modo no bloqueante
+    client_socket.setblocking(False) 
     try:
         client_socket.connect(('127.0.0.1', 5000))
     except BlockingIOError:
-        pass  # La conexión está en progreso o ya establecida
+        # This is expected when using setblocking(False), so we don't show it as an error
+        pass 
     except Exception as e:
-        print(f"Error al conectar al servidor: {e}")
-        cerrar_socket()
+        logging.error("Error connecting to server: %s", e)
+        close_socket()
 
-def recibir_datos():
+def receive_data():
     global client_socket
     if client_socket:
         try:
             data = client_socket.recv(4096)
             if data:
                 s = data.decode()
-                # Buscar la primera aparición de 'END_OF_MESSAGE'
-                indice = s.find('END_OF_MESSAGE')
 
-                # Si se encuentra 'END_OF_MESSAGE', cortar el string hasta ese punto
-                if indice != -1:
-                    # Incluir 'END_OF_MESSAGE' en el resultado
-                    s = s[:indice + len('END_OF_MESSAGE')]
+                index = s.find('END_OF_MESSAGE')
+                if index != -1:
                     etiqueta.config(text=s)
+                    s = s[:index + len('END_OF_MESSAGE')]
+                    process_message(s)
                 else:
-                    etiqueta.config(text="No se encontró 'END_OF_MESSAGE'")
+                    logging.warning("Did not find 'END_OF_MESSAGE'")
             else:
-                # No hay datos, lo que puede indicar que el servidor cerró la conexión
-                etiqueta.config(text="Conexión cerrada por el servidor")
-                cerrar_socket()
+                logging.info("Connection closed by the server")
+                close_socket()  # Close the socket if the server closes the connection
         except BlockingIOError:
-            pass  # No hay datos disponibles todavía
-        except ConnectionResetError:
-            etiqueta.config(text="Conexión cerrada por el servidor")
-            cerrar_socket()
+            # No data available to read, so do nothing
+            pass
+        except ConnectionResetError as e:
+            logging.warning("Connection closed by the server: %s", e)
+            close_socket()
         except Exception as e:
-            etiqueta.config(text=f"Error: {e}")
-            cerrar_socket()
-    else:
-        conectar_al_servidor()
-    root.after(100, recibir_datos)  # Verificar cada 100 ms
+            logging.error("Unexpected error: %s", e)
+            close_socket()
 
-def cerrar_socket():
+    else:
+        logging.info("No client connected, attempting to reconnect...")
+        connect_to_server()
+    
+    # Retry to receive data every 10 ms
+    root.after(10, receive_data)
+
+def close_socket():
     global client_socket
     if client_socket:
         try:
             client_socket.shutdown(socket.SHUT_RDWR)
         except Exception as e:
-            print(f"Error al hacer shutdown del socket: {e}")
+            logging.warning("Error shutting down the socket: %s", e)
         try:
             client_socket.close()
-            print("Socket cerrado correctamente.")
+            logging.info("Socket closed successfully.")
         except Exception as e:
-            print(f"Error al cerrar el socket: {e}")
+            logging.warning("Error closing the socket: %s", e)
         client_socket = None
 
 def on_closing():
-    cerrar_socket()
+    close_socket()
     root.destroy()
+    exit()
 
-# Configurar la GUI
+# Configure the GUI
 root = tk.Tk()
 root.title("Cliente GUI en Python")
-etiqueta = tk.Label(root, text="Esperando datos...")
+etiqueta = tk.Label(root, text="Waiting for data...")
 etiqueta.pack()
 
-# Manejar el cierre de la ventana para cerrar el socket correctamente
+# Properly close the window and the socket
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
-# Conectar al servidor
-client_socket = None
-conectar_al_servidor()
+# Attempt to connect to the server and continuously receive data
+connect_to_server()
+receive_data()
 
-# Iniciar la recepción de datos
-recibir_datos()
-
+# Start the main loop of tkinter
 root.mainloop()

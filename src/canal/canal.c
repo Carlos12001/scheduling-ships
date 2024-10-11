@@ -175,8 +175,6 @@ int send_data() {
         perror("Unexpected error in send()");
         // Handle other errors accordingly
       }
-    } else {
-      printf("Sending message to GUI/HW\n");
     }
   }
   cemutex_unlock(&socket_mutex);
