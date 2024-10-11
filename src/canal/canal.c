@@ -131,8 +131,6 @@ int send_data() {
   offset +=
       snprintf(buffer + offset, sizeof(buffer) - offset, "\nTiempoReal: %s",
                (Canal.TiempoReal) ? ("true") : ("false"));
-  offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\nSizeWait: %d",
-                     (left_sea.maxcapacity));
   offset +=
       snprintf(buffer + offset, sizeof(buffer) - offset, "\nYellow Light: %s",
                (Canal.Yellowlight) ? ("true") : ("false"));
@@ -659,7 +657,7 @@ void Canal_RR() {
   }
   Canal.canal[firstboat].Permission = true;
   Canal.RRID = Canal.canal[firstboat].ID;
-  printf("Quantum granted to %d in position %d\n", Canal.RRID, firstboat);
+  // printf("Quantum granted to %d in position %d\n", Canal.RRID, firstboat);
   cemutex_unlock(&canal_mutex);
 }
 
