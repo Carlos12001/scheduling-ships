@@ -1,7 +1,10 @@
 import socket
 import tkinter as tk
 import logging
+import signal
+import sys
 from PIL import Image, ImageTk
+
 
 # --- Socket Code ---
 
@@ -65,7 +68,7 @@ def receive_data():
         connect_to_server()
     update_canvas()  # Update the GUI with new data
     # Retry to receive data every 100 ms
-    root.after(100, receive_data)
+    root.after(1, receive_data)
 
 def close_socket():
     global client_socket
@@ -256,15 +259,16 @@ def update_canvas():
 
 
     ####--------------------- DRAW WAITING LEFT BOATS ---------------------####
-
+    font_text = ("Arial", size_font*2, "bold")
     if len(wait_left_boats) <= MAX_VISIBLE_BOATS or left_start_index > len(wait_left_boats):
         left_start_index = 0
-
+    cout = 0
     # Draw waiting boats on the left 'mar' columns
     left_mar_columns = [0, 1]
     for i in range(left_start_index, len(wait_left_boats) + left_start_index):
-        if left_start_index != 0 and i%MAX_VISIBLE_BOATS == 0:
+        if cout >= MAX_VISIBLE_BOATS:
             break
+        cout += 1
         boat_type = wait_left_boats[i]
         idx = (i-left_start_index) % MAX_VISIBLE_BOATS
         if boat_type in tk_boat_images:
@@ -273,6 +277,7 @@ def update_canvas():
             x = col * tile_width
             y = row * tile_height
             canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+            canvas.create_text(x+tile_width//16, y+tile_height//32, text=str(i), font=font_text)
 
     # Manage visibility of left up/down buttons
     if left_start_index > 0:
@@ -291,12 +296,13 @@ def update_canvas():
 
     if len(wait_right_boats) <= MAX_VISIBLE_BOATS or right_start_index > len(wait_right_boats):
         right_start_index = 0
-
+    cout = 0
     # Draw waiting boats on the right 'mar' columns
     right_mar_columns = [num_columns - 2, num_columns - 1]
     for i in range(right_start_index, len(wait_right_boats)):
-        if right_start_index != 0 and i%MAX_VISIBLE_BOATS == 0:
+        if cout >= MAX_VISIBLE_BOATS:
             break
+        cout += 1
         boat_type = wait_right_boats[i]
         idx = (i-right_start_index) % MAX_VISIBLE_BOATS
         if boat_type in tk_boat_images:
@@ -305,6 +311,7 @@ def update_canvas():
             x = col * tile_width
             y = row * tile_height
             canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+            canvas.create_text(x+tile_width//16, y+tile_height//32, text=str(i), font=font_text)
 
     # Manage visibility of right up/down buttons
     if right_start_index > 0:
@@ -356,9 +363,27 @@ def right_scroll_down():
             right_start_index = 0
     update_canvas()
 
+# --- Handle Keyboard Interrupt ---
+
+def handle_sigint(signum, frame):
+    logging.info("Keyboard interrupt received. Closing the application...")
+    on_closing()
+
+
+# Bind keyboard events (optional, e.g., pressing 'Escape' to close)
+def on_key_press(event):
+    key = event.keysym
+    logging.info(f"Key pressed: {key}")
+    if key == 'Escape':
+        on_closing()
+
+
+
 
 
 # Configure the GUI
+# Register the signal handler for SIGINT
+signal.signal(signal.SIGINT, handle_sigint)
 root = tk.Tk()
 root.title("Python GUI Client")
 
@@ -384,6 +409,9 @@ right_down_button = tk.Button(canvas, text='Down', command=right_scroll_down)
 # Properly close the window and the socket
 root.protocol("WM_DELETE_WINDOW", on_closing)
 
+# Bind keyboard events
+root.bind('<Key>', on_key_press)
+
 ## Import images
 import_images()
 
@@ -391,5 +419,11 @@ import_images()
 connect_to_server()
 receive_data()
 
-# Start the main loop of tkinter
-root.mainloop()
+# Start the main loop of tkinter with KeyboardInterrupt handling
+try:
+    root.mainloop()
+except KeyboardInterrupt:
+    handle_sigint(None, None)
+except Exception as e:
+    logging.error(e)
+    on_closing()

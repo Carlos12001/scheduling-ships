@@ -19,7 +19,7 @@ real_time = False
 def process_message(message):
     global canal, direction, yellow_light, wait_left_boats, wait_right_boats, real_time
 
-    lines = message.split('\n')
+    lines = message.strip().split('\n')
     for line in lines:
         if line.startswith('Canal:'):
             canal = [int(x) if x != '-1' else -1 for x in line.split(':')[1].strip().split()]
@@ -31,8 +31,8 @@ def process_message(message):
             wait_left_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
         elif line.startswith('Right:'):
             wait_right_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
-        elif line.startswith('Real Time:'):
-            real_time = line.split(':')[1].strip().lower() == 'true'    
+        elif line.startswith('TiempoReal:'):
+            real_time = line.split(':')[1].strip().lower() == 'true'  
 
 def connect_to_server():
     global client_socket
