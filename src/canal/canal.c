@@ -303,6 +303,7 @@ void waitline_init(bool right, char *list) {
       addboatdummy(right, i + 1);
     }
   }
+  canalcontent();
 }
 
 void waitline_create() {
@@ -334,7 +335,6 @@ void addboatdummy(bool right, int type) {
       left_sea.waiting[left_sea.capacity++] = newBoat;
     }
   }
-  canalcontent();
 }
 
 void *boatmover(void *arg) {
@@ -392,7 +392,7 @@ void *boatmover(void *arg) {
       }
     }
   }
-
+  cethread_end(NULL);  // Convert to long to avoid casting warnings
   return NULL;
 }
 
@@ -482,12 +482,22 @@ void BoatGUI() {
       addboatdummy(true, boattype);  // Agregar barco a la derecha
       Canal.TiempoReal = calendar(Canal.thread_scheduling, right_sea.waiting,
                                   right_sea.capacity, GetSlowestBoat());
+      if (Canal.thread_scheduling) {
+        CheckRealTime();
+      }
+      canalcontent();
+
       cemutex_unlock(&canal_mutex);
     } else if (strcmp(respuesta, "l") == 0) {
       cemutex_lock(&canal_mutex);
       addboatdummy(false, boattype);  // Agregar barco a la izquierda
       Canal.TiempoReal = calendar(Canal.thread_scheduling, left_sea.waiting,
                                   left_sea.capacity, GetSlowestBoat());
+      if (Canal.thread_scheduling) {
+        CheckRealTime();
+      }
+      canalcontent();
+
       cemutex_unlock(&canal_mutex);
     }
   }
@@ -569,7 +579,7 @@ void *Canal_Schedule(void *arg) {
 
 void YellowCanal() {
   Canal.Yellowlight = true;
-  while (Canal.Yellowlight) {
+  while (Canal.Yellowlight && Canal.running) {
     if (Canal.boats_in == 0) {
       Canal.Yellowlight = false;
     }
@@ -602,8 +612,13 @@ int EnterCanal(int Waitpos, bool queue) {
     cemutex_lock(&canal_mutex);
     boat newboat = GetEnterBoat(Waitpos, queue);
     newboat.position = newposition;
+    if (Canal.boats_in == 0) {
+      Canal.RRID = newboat.ID;
+      newboat.Permission = true;
+    }
     Canal.canal[newboat.position] = newboat;
     Canal.boats_in++;
+
     canalcontent();
     cemutex_unlock(&canal_mutex);
     if (cethread_create(&Canal.canal[newboat.position].thread,
@@ -690,7 +705,6 @@ void Canal_RR() {
   }
   Canal.canal[firstboat].Permission = true;
   Canal.RRID = Canal.canal[firstboat].ID;
-  // printf("Quantum granted to %d in position %d\n", Canal.RRID, firstboat);
   cemutex_unlock(&canal_mutex);
 }
 
