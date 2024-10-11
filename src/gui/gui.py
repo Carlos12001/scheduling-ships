@@ -7,14 +7,6 @@ from PIL import Image, ImageTk
 logging.basicConfig(level=logging.CRITICAL)
 
 # Global variables
-global client_socket
-global canal
-global wait_right_boats
-global wait_left_boats
-global direction
-global yellow_light
-global emergency
-global real_time
 client_socket = None
 canal = []
 wait_right_boats = []
@@ -24,10 +16,32 @@ yellow_light = False
 emergency = False
 real_time = False
 
+# Load images
+file_directory = ""  # Set your file directory here
+
+# Boat images
+boat_images = {
+    1: Image.open(file_directory + "images/normal.gif"),
+    2: Image.open(file_directory + "images/fish.gif"),
+    3: Image.open(file_directory + "images/police.gif")
+}
+
+# Background images
+sea_image = Image.open(file_directory + "images/sea.gif")
+asphalt_image = Image.new('RGB', (100, 100), color='gray')  # Placeholder for asphalt
+
+# Resize images as needed
+def resize_images(new_width, new_height):
+    global boat_images, sea_image, asphalt_image
+    for key in boat_images:
+        boat_images[key] = boat_images[key].resize((new_width, new_height), Image.ANTIALIAS)
+    sea_image = sea_image.resize((new_width, new_height), Image.ANTIALIAS)
+    asphalt_image = asphalt_image.resize((new_width, new_height), Image.ANTIALIAS)
+
 def process_message(message):
     global canal, direction, yellow_light, emergency, wait_left_boats, wait_right_boats
 
-    lines = message.split('\n')
+    lines = message.strip().split('\n')
     for line in lines:
         if line.startswith('Canal:'):
             canal = [int(x) if x != '-1' else -1 for x in line.split(':')[1].strip().split()]
@@ -42,6 +56,8 @@ def process_message(message):
         elif line.startswith('Right:'):
             wait_right_boats = [int(x) for x in line.split(':')[1].strip().strip('[]').split()]
 
+    update_canvas()  # Update the GUI with new data
+
 def connect_to_server():
     global client_socket
     if client_socket is not None:
@@ -52,7 +68,6 @@ def connect_to_server():
     try:
         client_socket.connect(('127.0.0.1', 5000))
     except BlockingIOError:
-        # This is expected when using setblocking(False), so we don't show it as an error
         pass 
     except Exception as e:
         logging.error("Error connecting to server: %s", e)
@@ -68,16 +83,14 @@ def receive_data():
 
                 index = s.find('END_OF_MESSAGE')
                 if index != -1:
-                    etiqueta.config(text=s)
                     s = s[:index + len('END_OF_MESSAGE')]
                     process_message(s)
                 else:
                     logging.warning("Did not find 'END_OF_MESSAGE'")
             else:
                 logging.info("Connection closed by the server")
-                close_socket()  # Close the socket if the server closes the connection
+                close_socket()
         except BlockingIOError:
-            # No data available to read, so do nothing
             pass
         except ConnectionResetError as e:
             logging.warning("Connection closed by the server: %s", e)
@@ -90,8 +103,8 @@ def receive_data():
         logging.info("No client connected, attempting to reconnect...")
         connect_to_server()
     
-    # Retry to receive data every 10 ms
-    root.after(10, receive_data)
+    # Retry to receive data every 100 ms
+    root.after(100, receive_data)
 
 def close_socket():
     global client_socket
@@ -112,11 +125,72 @@ def on_closing():
     root.destroy()
     exit()
 
+# Update the canvas based on the current data
+def update_canvas():
+    canvas.delete("all")  # Clear the canvas
+    canvas_width = canvas.winfo_width()
+    canvas_height = canvas.winfo_height()
+
+    # Determine the size of each tile
+    canal_length = len(canal)
+    tile_width = canvas_width // (canal_length + 2)  # +2 for the sides
+    tile_height = canvas_height // 5  # Adjust as needed
+
+    resize_images(tile_width, tile_height)
+
+    # Convert PIL images to ImageTk
+    tk_boat_images = {key: ImageTk.PhotoImage(img) for key, img in boat_images.items()}
+    tk_sea_image = ImageTk.PhotoImage(sea_image)
+    tk_asphalt_image = ImageTk.PhotoImage(asphalt_image)
+
+    # Draw the asphalt (top and bottom)
+    for i in range(canal_length + 2):
+        x = i * tile_width
+        canvas.create_image(x, 0, anchor='nw', image=tk_asphalt_image)
+        canvas.create_image(x, canvas_height - tile_height, anchor='nw', image=tk_asphalt_image)
+
+    # Draw the waiting boats on the left
+    for idx, boat_type in enumerate(wait_left_boats):
+        if boat_type in tk_boat_images:
+            y = (idx + 1) * tile_height
+            canvas.create_image(0, y, anchor='nw', image=tk_boat_images[boat_type])
+
+    # Draw the waiting boats on the right
+    for idx, boat_type in enumerate(wait_right_boats):
+        if boat_type in tk_boat_images:
+            y = (idx + 1) * tile_height
+            x = canvas_width - tile_width
+            canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+
+    # Draw the canal and boats
+    for idx, boat_type in enumerate(canal):
+        x = (idx + 1) * tile_width  # Offset by 1 to account for sides
+        y = tile_height  # Start drawing from the second row
+        if boat_type == -1:
+            # Draw sea
+            canvas.create_image(x, y, anchor='nw', image=tk_sea_image)
+        elif boat_type in tk_boat_images:
+            # Draw boat on sea
+            canvas.create_image(x, y, anchor='nw', image=tk_sea_image)
+            canvas.create_image(x, y, anchor='nw', image=tk_boat_images[boat_type])
+
+    # Keep a reference to the images to prevent garbage collection
+    canvas.tk_boat_images = tk_boat_images
+    canvas.tk_sea_image = tk_sea_image
+    canvas.tk_asphalt_image = tk_asphalt_image
+
 # Configure the GUI
 root = tk.Tk()
-root.title("Cliente GUI en Python")
-etiqueta = tk.Label(root, text="Waiting for data...")
-etiqueta.pack()
+root.title("Python GUI Client")
+
+# Set window size
+window_width = 800
+window_height = 600
+root.geometry(f"{window_width}x{window_height}")
+
+# Create canvas
+canvas = tk.Canvas(root, width=window_width, height=window_height)
+canvas.pack(fill="both", expand=True)
 
 # Properly close the window and the socket
 root.protocol("WM_DELETE_WINDOW", on_closing)
