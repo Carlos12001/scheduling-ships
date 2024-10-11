@@ -1,11 +1,11 @@
 #ifndef CALENDAR_H
 #define CALENDAR_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 #include "../lib/cethread.h"
 
@@ -26,6 +26,6 @@ typedef struct {
 
 } boat;
 
-bool calendar(int option, boat *procesos, int num_procesos,boat slowestboat);
+bool calendar(int option, boat *procesos, int num_procesos, boat slowestboat);
 
 #endif  // CALENDAR_H

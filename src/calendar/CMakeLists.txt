@@ -1,5 +1,5 @@
 # src/calendar/CMakeLists.txt
-cmake_minimum_required(VERSION 3.22.0)
+cmake_minimum_required(VERSION 3.10.0)
 
 # Set the project name as a variable for reuse
 set(CALENDAR_NAME calendar)

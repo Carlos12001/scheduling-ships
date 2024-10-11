@@ -11,6 +11,14 @@
 
 #include "../calendar/calendar.h"
 
+#ifndef SOCKET_PORT
+#define SOCKET_PORT 5000
+#endif
+
+#ifndef BUFFER_SIZE
+#define BUFFER_SIZE 2048
+#endif
+
 #define MAX_LINE_LENGTH 256
 
 typedef struct {
@@ -20,7 +28,6 @@ typedef struct {
 } waitline;
 
 typedef struct {
-
   int managed_boats;  // De momento uso los ids de aqui
   int boats_in;
   int size;
@@ -30,16 +37,16 @@ typedef struct {
   int time;
   int boatspeeds[3];
 
-  int canal_scheduling; // 1 igual
-                        // 2 semaforo
-                        // 3 tico
+  int canal_scheduling;  // 1 igual
+                         // 2 semaforo
+                         // 3 tico
 
-  int thread_scheduling;// 1 FCFS
-                        // 2 SJF
-                        // 3 Prioridad
-                        // 4 RR
-                        // 3 RealTime
-                        
+  int thread_scheduling;  // 1 FCFS
+                          // 2 SJF
+                          // 3 Prioridad
+                          // 4 RR
+                          // 3 RealTime
+
   bool direction;  // True derecha, false izquierda
   bool running;
 
@@ -47,7 +54,7 @@ typedef struct {
                      // de alerta de luz amarilla
 
   bool TiempoReal;
-  int RRiter;  
+  int RRiter;
   int RRID;
 
 } canal;
@@ -89,4 +96,13 @@ boat GetSlowestBoat();
 void Canal_RR();
 
 void CheckRealTime();
+
+void init_server_socket();
+
+void *accept_connections(void *arg);
+
+void start_server();
+
+int send_data();
+
 #endif  // CANAL_H;
