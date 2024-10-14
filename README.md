@@ -27,7 +27,11 @@ Scheduling Ships is a project that implements a custom thread library in C calle
 ### Tools
 
 ```bash
-sudo apt install build-essential cmake ninja-build
+sudo apt install build-essential cmake ninja-build python3-tk
+```
+
+```bash
+pip install Pillow
 ```
 
 ## Configuration
@@ -43,3 +47,7 @@ Modify the configuration file to set parameters for the canal:
 ## Design Hardware
 
 https://docs.google.com/spreadsheets/d/19UOhnq-4k82qcbcaTn_bHiEcXRDhYykFDQgcdTzBlP0/edit?usp=sharing
+
+```
+
+```
